@@ -38,13 +38,12 @@ How this repo lines up with the course pools.
 
 **Goal:** Matches, standings, and a clear game loop.
 
-- [X] Match simulation that works: `FootballMatchEngine` (`IMatchEngine`, phases, scores, events)
-- [ ] `AbstractMatchEngine` filled in or used — class is **empty**; engine does **not** extend it
-- [ ] `StandingsCalculator` doing the table sort — class is **empty**; points + sort live in `FootballLeague.getStandings()`
-- [ ] Application controllers: `WeekController`, `MatchController`, `LeagueController` *(not in the repo)*
-- [ ] Testing brief to the letter: lots of good coverage in `FootballTest`, but no focused suite on a real `StandingsCalculator` + deep tie-break cases as separate unit tests
+- [X] Match simulation: `FootballMatchEngine` extends **`AbstractMatchEngine`** (phase loop + `finishMatch` + event list)
+- [X] **`StandingsCalculator`**: builds rows from played fixtures and sorts (points → GD → GF → name); **`FootballLeague`** delegates to it
+- [X] Application controllers: **`WeekController`**, **`MatchController`**, **`LeagueController`** in `com.sportsmanager.application`
+- [X] Targeted tests: **`StandingsCalculatorTest`** (compare + `compute`), **`FootballMatchEngineStructureTest`**, **`SimulationControllersTest`** (week play + 2-team season)
 
-**Pool 3 in one line:** Playable simulation exists; the named abstractions and controllers from the brief still need work.
+**Pool 3 in one line:** Done — engine abstraction, standings calculator, controllers, and supporting tests are in place.
 
 ---
 
@@ -59,7 +58,7 @@ How this repo lines up with the course pools.
 - [ ] `Main.java` entry that actually runs *(currently empty)*
 - [ ] JavaFX wiring: `MainMenuController`, `DashboardController`, `MatchViewController` *(placeholder FXML points at a wrong `HelloController` package)*
 - [ ] ~3 tests for JSON save/load of `GameSession`
-- [ ] Reliable `mvn clean compile` on a typical machine *(JavaFX + `module-info` often needs extra plugin / module path setup — compile failed here with “module not found: javafx.controls”)*
+- [ ] Reliable **`mvn clean compile` with JavaFX** on a typical machine *(JavaFX `requires` were removed from `module-info` so the project compiles without a JavaFX module path; add them back with the JavaFX Maven plugin when you ship UI)*
 - [ ] `mvn exec:java` meaningful once `Main` exists
 
 **Pool 4 in one line:** POM skeleton yes; persistence, UI, and green builds are the main gap.
@@ -70,8 +69,8 @@ How this repo lines up with the course pools.
 
 **Goal:** Marks, report, clean handoff, release.
 
-- [X] Test count: on the order of **37** `@Test` methods (`FootballTest` + `FrameworkTest`) — likely enough **if** the suite builds and runs
-- [ ] ~4 **integration** tests (e.g. simulate a full week end-to-end) — hard without the week / match controllers
+- [X] Test count: **~43** `@Test` methods across `FootballTest`, `FrameworkTest`, `StandingsCalculatorTest`, `FootballMatchEngineStructureTest`, `SimulationControllersTest`
+- [X] Week / season style checks: **`SimulationControllersTest`** (play a week, advance week, 2-team double round-robin) — add more if the brief asks for a higher integration count
 - [ ] M2 PDF: “what changed from M1 and why”
 - [ ] Repo verified on a **fresh clone**: `mvn clean compile`, `mvn test`, `mvn exec:java` all green
 - [ ] GitHub **Release** before the course deadline
@@ -86,19 +85,19 @@ How this repo lines up with the course pools.
 - [X] **Pool 1** — domain code  
 - [ ] **Pool 1** — `GameSession` tests (if you treat the brief strictly)  
 - [X] **Pool 2** — football + tests  
-- [ ] **Pool 3** — `AbstractMatchEngine` / `StandingsCalculator` / controllers / strict test split  
+- [X] **Pool 3** — engine + standings + controllers + tests  
 - [ ] **Pool 4** — JSON repo, runnable UI, Gson/Jackson, stable Maven  
-- [ ] **Pool 5** — PDF, release, fresh-clone checks, week-style integration tests  
+- [ ] **Pool 5** — PDF, release, fresh-clone checks *(integration-style week tests exist; still verify full Maven + `exec:java` once Pool 4 lands)*  
 
 ---
 
 ## Suggested order of attack
 
-1. [ ] Pool 4 — JSON + `Main` + JavaFX so the project runs and compiles reliably  
-2. [ ] Pool 3 — move standings into `StandingsCalculator`, wire controllers, flesh out `AbstractMatchEngine`  
-3. [ ] Pool 1 / 5 — `GameSession` tests + a few full-week integration tests  
+1. [ ] Pool 4 — JSON + `Main` + JavaFX (restore `module-info` JavaFX `requires` + plugin / module path as needed)  
+2. [X] Pool 3 — *(done)*  
+3. [ ] Pool 1 / 5 — `GameSession` tests + any extra integration padding the rubric asks for  
 4. [ ] Pool 5 — M2 PDF, GitHub Release, repo URL file  
 
 ---
 
-*Last reviewed: **2026-04-11***
+*Last reviewed: **2026-04-11** (Pool 3 marked complete in roadmap.)*

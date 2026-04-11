@@ -9,27 +9,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class FootballMatchEngine implements IMatchEngine {
+public class FootballMatchEngine extends AbstractMatchEngine {
 
     private static final double GOAL_BASE_PROBABILITY = 0.08;
-    private final Random random = new Random();
-    private final List<MatchEvent> events = new ArrayList<>();
+    private final Random random;
+
+    public FootballMatchEngine() {
+        this(new Random());
+    }
+
+    public FootballMatchEngine(Random random) {
+        this.random = random;
+    }
 
     @Override
-    public IMatchResult simulate(ITeam home, ITeam away) {
-        events.clear();
-        int homeScore = 0;
-        int awayScore = 0;
+    protected int getPhaseCount() {
+        return 2;
+    }
 
-        for (int phase = 1; phase <= 2; phase++) {
-            PhaseResult pr = simulatePhase(home, away, phase);
-            homeScore += pr.homeScore;
-            awayScore += pr.awayScore;
-        }
-
+    @Override
+    protected IMatchResult finishMatch(ITeam home, ITeam away, int homeScore, int awayScore) {
         List<IPlayer> injured = calculateInjuries(home, away);
-        return new FootballMatchResult(homeScore, awayScore, home, away,
-                new ArrayList<>(events), injured);
+        return new FootballMatchResult(homeScore, awayScore, home, away, copyMatchEvents(), injured);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class FootballMatchEngine implements IMatchEngine {
                 IPlayer scorer = pickRandomAttacker(home);
                 MatchEvent event = new MatchEvent(minute, phase, MatchEventType.GOAL,
                         scorer.getName() + " scores!", home, scorer);
-                events.add(event);
+                recordMatchEvent(event);
                 result.events.add(event);
                 result.homeScore++;
             }
@@ -63,7 +64,7 @@ public class FootballMatchEngine implements IMatchEngine {
                 IPlayer scorer = pickRandomAttacker(away);
                 MatchEvent event = new MatchEvent(minute, phase, MatchEventType.GOAL,
                         scorer.getName() + " scores!", away, scorer);
-                events.add(event);
+                recordMatchEvent(event);
                 result.events.add(event);
                 result.awayScore++;
             }
@@ -72,14 +73,11 @@ public class FootballMatchEngine implements IMatchEngine {
         return result;
     }
 
-    @Override
-    public List<MatchEvent> getMatchEvents() {
-        return events;
-    }
-
     private double calculateAttackStrength(ITeam team) {
         List<IPlayer> squad = team.getStartingEleven();
-        if (squad == null || squad.isEmpty()) squad = team.getSquad();
+        if (squad == null || squad.isEmpty()) {
+            squad = team.getSquad();
+        }
         return squad.stream()
                 .filter(p -> !p.isInjured())
                 .mapToInt(IPlayer::getOverallRating)
@@ -89,7 +87,9 @@ public class FootballMatchEngine implements IMatchEngine {
 
     private double calculateDefenseStrength(ITeam team) {
         List<IPlayer> squad = team.getStartingEleven();
-        if (squad == null || squad.isEmpty()) squad = team.getSquad();
+        if (squad == null || squad.isEmpty()) {
+            squad = team.getSquad();
+        }
         return squad.stream()
                 .filter(p -> !p.isInjured())
                 .mapToInt(IPlayer::getOverallRating)
@@ -99,9 +99,13 @@ public class FootballMatchEngine implements IMatchEngine {
 
     private IPlayer pickRandomAttacker(ITeam team) {
         List<IPlayer> squad = team.getStartingEleven();
-        if (squad == null || squad.isEmpty()) squad = team.getSquad();
+        if (squad == null || squad.isEmpty()) {
+            squad = team.getSquad();
+        }
         List<IPlayer> available = squad.stream().filter(p -> !p.isInjured()).toList();
-        if (available.isEmpty()) return squad.get(0);
+        if (available.isEmpty()) {
+            return squad.get(0);
+        }
         return available.get(random.nextInt(available.size()));
     }
 
