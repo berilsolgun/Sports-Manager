@@ -4,6 +4,7 @@ import com.sportsmanager.domain.league.AbstractLeague;
 import com.sportsmanager.domain.league.IFixture;
 import com.sportsmanager.domain.league.IMatchResult;
 import com.sportsmanager.domain.league.StandingEntry;
+import com.sportsmanager.domain.session.GameSession;
 import com.sportsmanager.domain.team.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -90,7 +91,7 @@ class FrameworkTest {
 
     @Test
     void testInvalidStartingElevenThrowsException(){
-        TestTeam team = new TestTeam("Fenerbahçe", "logo.png");
+        TestTeam team = new TestTeam("Seals", "logo.png");
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             team.setStartingEleven(new ArrayList<>());
         });
@@ -104,6 +105,20 @@ class FrameworkTest {
         TestLeague league = new TestLeague("Super Lig", teams);
         Assertions.assertEquals(1, league.getTeams().size());
         Assertions.assertEquals("Team A", league.getTeams().get(0).getName());
+    }
+
+    @Test
+    void testGameSessionState() {
+        GameSession session = new GameSession();
+        TestTeam myTeam = new TestTeam("Lions", "logo.png");
+
+        session.setPlayerTeam(myTeam);
+        session.setCurrentWeek(5);
+        session.setSeason(2026);
+
+        Assertions.assertEquals("Lions", session.getPlayerTeam().getName(), "Team names don't match.");
+        Assertions.assertEquals(5, session.getCurrentWeek(), "Week info is wrong.");
+        Assertions.assertEquals(2026, session.getSeason(), "Session info is wrong.");
     }
 
 }
