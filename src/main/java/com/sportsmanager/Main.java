@@ -1,12 +1,22 @@
 package com.sportsmanager;
 
+import com.sportsmanager.application.LeagueController;
+import com.sportsmanager.application.MatchController;
+import com.sportsmanager.application.WeekController;
+import com.sportsmanager.domain.league.ILeague;
+import com.sportsmanager.domain.league.StandingEntry;
 import com.sportsmanager.domain.session.GameSession;
 import com.sportsmanager.domain.session.JsonGameRepository;
-import com.sportsmanager.football.*;
-import com.sportsmanager.application.*;
-import com.sportsmanager.domain.league.StandingEntry;
+import com.sportsmanager.domain.team.ITeam;
+import com.sportsmanager.football.FootballFactory;
+import com.sportsmanager.football.FootballMatchEngine;
+import com.sportsmanager.football.FootballPosition;
+import com.sportsmanager.football.FootballPlayer;
+import com.sportsmanager.football.FootballTeam;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Main {
@@ -14,28 +24,30 @@ public class Main {
 
         System.out.println("=== Sports Manager ===");
 
-        // Takımlar oluştur
-        FootballTeam team1 = new FootballTeam("Galatasaray", "gs.png");
-        FootballTeam team2 = new FootballTeam("Fenerbahce", "fb.png");
-        FootballTeam team3 = new FootballTeam("Besiktas", "bjk.png");
-        FootballTeam team4 = new FootballTeam("Trabzonspor", "ts.png");
+        FootballFactory factory = new FootballFactory();
 
-        // Oyuncular ekle
-        addPlayers(team1);
-        addPlayers(team2);
-        addPlayers(team3);
-        addPlayers(team4);
+        // Takımlar rastgele seç
+        String[] allTeamNames = factory.getTeamNames();
+        List<String> nameList = new ArrayList<>(Arrays.asList(allTeamNames));
+        Collections.shuffle(nameList);
+
+        List<ITeam> teams = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            String name = nameList.get(i);
+            ITeam team = factory.createTeam(name, name.toLowerCase() + ".png");
+            setStartingEleven((FootballTeam) team);
+            teams.add(team);
+        }
 
         // Lig oluştur
-        FootballLeague league = new FootballLeague("Super Lig",
-            List.of(team1, team2, team3, team4));
+        ILeague league = factory.createLeague("Super Lig", teams);
 
         // Session oluştur
         GameSession session = new GameSession();
         session.setCurrentWeek(1);
         session.setSeason(2026);
         session.setLeague(league);
-        session.setPlayerTeam(team1);
+        session.setPlayerTeam(teams.get(0));
 
         // Kaydet
         JsonGameRepository repo = new JsonGameRepository();
@@ -65,12 +77,13 @@ public class Main {
         );
     }
 
-   private static void addPlayers(FootballTeam team) {
-        String[] allNames = {
-            "Ahmet", "Mehmet", "Ali", "Mustafa", "Emre", "Kerem", "Burak",
-            "Arda", "Hakan", "Serdar", "Ozan", "Caner", "Mert", "Taylan",
-            "Berkay", "Dorukhan", "Ismail", "Yunus", "Salih", "Okay"
-        };
+    private static void setStartingEleven(FootballTeam team) {
+        List<FootballPlayer> squad = team.getSquad().stream()
+            .filter(p -> p instanceof FootballPlayer)
+            .map(p -> (FootballPlayer) p)
+            .toList();
+
+        List<FootballPlayer> eleven = new ArrayList<>();
         FootballPosition[] positions = {
             FootballPosition.GK,
             FootballPosition.CB, FootballPosition.CB,
@@ -80,22 +93,15 @@ public class Main {
             FootballPosition.ST
         };
 
-        java.util.List<String> namePool = new java.util.ArrayList<>(java.util.Arrays.asList(allNames));
-        java.util.Collections.shuffle(namePool);
-
-        java.util.List<FootballPlayer> players = new java.util.ArrayList<>();
-        for (int i = 0; i < 11; i++) {
-            int r = 65 + (int)(Math.random() * 20);
-            FootballPlayer player = new FootballPlayer(
-                namePool.get(i),
-                18 + (int)(Math.random() * 15),
-                positions[i],
-                r, r, r, r, r, r,
-                positions[i] == FootballPosition.GK ? r : 30
-            );
-            team.addPlayer(player);
-            players.add(player);
+        for (FootballPosition pos : positions) {
+            squad.stream()
+                .filter(p -> p.getFootballPosition() == pos && !eleven.contains(p))
+                .findFirst()
+                .ifPresent(eleven::add);
         }
-        team.setStartingEleven(new java.util.ArrayList<>(players));
+
+        if (eleven.size() == 11) {
+            team.setStartingEleven(new ArrayList<>(eleven));
+        }
     }
 }
