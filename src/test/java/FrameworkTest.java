@@ -1,9 +1,15 @@
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.sportsmanager.domain.team.AbstractPlayer;
-import com.sportsmanager.domain.team.Position;
+import com.sportsmanager.domain.league.AbstractLeague;
+import com.sportsmanager.domain.league.IFixture;
+import com.sportsmanager.domain.league.IMatchResult;
+import com.sportsmanager.domain.league.StandingEntry;
+import com.sportsmanager.domain.team.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 class FrameworkTest {
@@ -20,6 +26,35 @@ class FrameworkTest {
         @Override public Map<String, Integer> getAttributes() { return null; }
     }
 
+    class TestTeam extends AbstractTeam {
+        public TestTeam(String n, String l) { super(n, l); }
+
+        @Override
+        public boolean validateStartingEleven(List<IPlayer> players) {
+            return !players.isEmpty();
+        }
+
+        @Override public int getTeamRating() { return 100; }
+        @Override public List<ICoach> getCoaches() { return new ArrayList<>(); }
+    }
+
+    class TestLeague extends AbstractLeague {
+        public TestLeague(String n, List<ITeam> t) { super(n, t); }
+
+        @Override
+        public void recordResult(IFixture fixture, IMatchResult result) {
+
+        }
+
+        @Override public List<StandingEntry> getStandings() { return null; }
+        @Override public boolean isSeasonOver() { return false; }
+
+        @Override
+        public List<IFixture> getWeekFixtures(int week) {
+            return new ArrayList<>();
+        }
+    }
+
     @Test
     void testInjurySystem() {
         TestPlayer p = new TestPlayer("Test", 20, Position.FW);
@@ -32,4 +67,43 @@ class FrameworkTest {
         p.recoverOneGame();
         assertFalse(p.isInjured());
     }
+
+    @Test
+    void testPlayerIdentity(){
+        TestPlayer p = new TestPlayer("Test", 20, Position.FW);
+        Assertions.assertEquals("Test", p.getName());
+        Assertions.assertEquals(20, p.getAge());
+        Assertions.assertEquals(Position.FW, p.getPosition());
+
+    }
+
+    @Test
+    void testTeamSquadManagement() {
+        TestTeam team = new TestTeam("Lions", "logo.png");
+        TestPlayer p1 = new TestPlayer("P1", 20, Position.GK);
+
+        team.addPlayer(p1);
+        Assertions.assertEquals(1, team.getSquad().size());
+        Assertions.assertTrue(team.getSquad().contains(p1));
+
+    }
+
+    @Test
+    void testInvalidStartingElevenThrowsException(){
+        TestTeam team = new TestTeam("Fenerbahçe", "logo.png");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            team.setStartingEleven(new ArrayList<>());
+        });
+    }
+
+    @Test
+    void testLeagueTeamAssignment() {
+        List<ITeam> teams = new ArrayList<>();
+        teams.add(new TestTeam("Team A", "logoA.png"));
+
+        TestLeague league = new TestLeague("Super Lig", teams);
+        Assertions.assertEquals(1, league.getTeams().size());
+        Assertions.assertEquals("Team A", league.getTeams().get(0).getName());
+    }
+
 }
