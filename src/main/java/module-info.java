@@ -1,4 +1,5 @@
 module com.sportsmanager {
+    
     exports com.sportsmanager;
     exports com.sportsmanager.domain.sport;
     exports com.sportsmanager.domain.team;
