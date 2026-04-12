@@ -16,5 +16,4 @@ public interface IMatchResult {
     int getAwayPoints();
     List<MatchEvent> getEvents();
     List<IPlayer> getInjuredPlayers();
-
 }

@@ -24,8 +24,6 @@ public final class StandingsCalculator {
     /**
      * Comparator order: higher points first, then higher goal difference,
      * then more goals for, then team name ascending (stable tie-break).
-     *
-     * @return negative if {@code a} ranks above {@code b}, positive if below, 0 if equal
      */
     public static int compare(StandingEntry a, StandingEntry b) {
         int c = Integer.compare(b.getPoints(), a.getPoints());
