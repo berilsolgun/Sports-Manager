@@ -226,7 +226,7 @@ class FootballTest {
         ITeam t2 = factory.createTeam("Away FC", "a.png");
         FootballMatchEngine engine = new FootballMatchEngine();
         IMatchResult result = engine.simulate(t1, t2);
-        assertTrue(result.getHOmeScore() >= 0);
+        assertTrue(result.getHomeScore() >= 0);
         assertTrue(result.getAwayScore() >= 0);
     }
 

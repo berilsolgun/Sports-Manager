@@ -14,4 +14,8 @@ public interface SportFactory {
     IMatchEngine createMatchEngine();
     List<Tactic> generateTactics();
 
+    /**
+     * Returns the pool of available team names for this sport.
+     */
+    String[] getTeamNames();
 }
