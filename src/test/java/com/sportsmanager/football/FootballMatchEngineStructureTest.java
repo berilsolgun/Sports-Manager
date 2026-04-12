@@ -30,7 +30,7 @@ class FootballMatchEngineStructureTest {
         ITeam away2 = factory.createTeam("A", "a.png");
         IMatchResult r2 = new FootballMatchEngine(new Random(2026L)).simulate(home2, away2);
 
-        assertEquals(r1.getHOmeScore(), r2.getHOmeScore());
+        assertEquals(r1.getHomeScore(), r2.getHomeScore());
         assertEquals(r1.getAwayScore(), r2.getAwayScore());
     }
 

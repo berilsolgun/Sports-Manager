@@ -29,7 +29,7 @@ public class FootballMatchResult implements IMatchResult {
     }
 
     @Override
-    public int getHOmeScore() {
+    public int getHomeScore() {
         return homeScore;
     }
 

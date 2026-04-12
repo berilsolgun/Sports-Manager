@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IMatchResult {
-    int getHOmeScore();
+    int getHomeScore();
     int getAwayScore();
     Optional<ITeam> getWinner();
     boolean isDraw();

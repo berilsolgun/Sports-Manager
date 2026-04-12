@@ -1,11 +1,8 @@
 package com.sportsmanager.football;
 
 import com.sportsmanager.domain.league.IFixture;
-import com.sportsmanager.domain.league.ILeague;
 import com.sportsmanager.domain.league.IMatchResult;
 import com.sportsmanager.domain.league.StandingEntry;
-import com.sportsmanager.domain.simulation.IMatchEngine;
-import com.sportsmanager.domain.sport.Sport;
 import com.sportsmanager.domain.sport.SportFactory;
 import com.sportsmanager.domain.team.*;
 
@@ -226,7 +223,7 @@ class FootballTest {
         ITeam t2 = factory.createTeam("Away FC", "a.png");
         FootballMatchEngine engine = new FootballMatchEngine();
         IMatchResult result = engine.simulate(t1, t2);
-        assertTrue(result.getHOmeScore() >= 0);
+        assertTrue(result.getHomeScore() >= 0);
         assertTrue(result.getAwayScore() >= 0);
     }
 

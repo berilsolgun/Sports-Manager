@@ -80,17 +80,17 @@ public final class StandingsCalculator {
         homeEntry.setPlayed(homeEntry.getPlayed() + 1);
         awayEntry.setPlayed(awayEntry.getPlayed() + 1);
 
-        homeEntry.setGoalsFor(homeEntry.getGoalsFor() + result.getHOmeScore());
+        homeEntry.setGoalsFor(homeEntry.getGoalsFor() + result.getHomeScore());
         homeEntry.setGoalsAgainst(homeEntry.getGoalsAgainst() + result.getAwayScore());
         awayEntry.setGoalsFor(awayEntry.getGoalsFor() + result.getAwayScore());
-        awayEntry.setGoalsAgainst(awayEntry.getGoalsAgainst() + result.getHOmeScore());
+        awayEntry.setGoalsAgainst(awayEntry.getGoalsAgainst() + result.getHomeScore());
 
         if (result.isDraw()) {
             homeEntry.setDrawn(homeEntry.getDrawn() + 1);
             awayEntry.setDrawn(awayEntry.getDrawn() + 1);
             homeEntry.setPoints(homeEntry.getPoints() + pointsForDraw);
             awayEntry.setPoints(awayEntry.getPoints() + pointsForDraw);
-        } else if (result.getHOmeScore() > result.getAwayScore()) {
+        } else if (result.getHomeScore() > result.getAwayScore()) {
             homeEntry.setWon(homeEntry.getWon() + 1);
             awayEntry.setLost(awayEntry.getLost() + 1);
             homeEntry.setPoints(homeEntry.getPoints() + pointsForWin);
