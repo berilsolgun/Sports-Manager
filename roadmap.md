@@ -14,9 +14,9 @@ How this repo lines up with the course pools.
 - [X] League interfaces: `ILeague`, `IFixture`, `IMatchResult`
 - [X] Abstract classes: `AbstractPlayer`, `AbstractTeam`, `AbstractLeague`
 - [X] Value types: `StandingEntry`, `MatchEvent`, `Tactic`, `GameSession`, `PhaseResult`
-- [ ] Testing brief as written: `FrameworkTest` has 5 tests (injuries, player, squad, starting XI, league), but **no `GameSession` tests** yet
+- [ ] Testing brief as written: `FrameworkTest` covers injuries, player, squad, starting XI, league — add **`GameSession`-specific** tests if the rubric asks for them explicitly
 
-**Pool 1 in one line:** Almost there — add `GameSession` tests if you want to match the brief literally.
+**Pool 1 in one line:** Domain code complete; optional gap is extra `GameSession` unit tests.
 
 ---
 
@@ -27,10 +27,10 @@ How this repo lines up with the course pools.
 - [X] `FootballSport` and `FootballFactory`
 - [X] `FootballPlayer`, `FootballPosition`, `FootballTeam`
 - [X] `FootballLeague` and `FootballCoach`
-- [ ] Name files `names_male.txt` / `team_names_football.txt` in the repo *(optional — brief also allows hardcoded lists, which is what `FootballFactory` does today)*
-- [X] Football rules tests (`FootballTest`, including starting XI / two goalkeepers, etc.)
+- [ ] Name files `names_male.txt` / `team_names_football.txt` *(optional — factory uses hardcoded name arrays today)*
+- [X] Football rules tests (`FootballTest`, etc.)
 
-**Pool 2 in one line:** Done for what the code needs; file-based names are optional.
+**Pool 2 in one line:** Done for implementation and tests; file-based names remain optional.
 
 ---
 
@@ -38,12 +38,12 @@ How this repo lines up with the course pools.
 
 **Goal:** Matches, standings, and a clear game loop.
 
-- [X] Match simulation: `FootballMatchEngine` extends **`AbstractMatchEngine`** (phase loop + `finishMatch` + event list)
-- [X] **`StandingsCalculator`**: builds rows from played fixtures and sorts (points → GD → GF → name); **`FootballLeague`** delegates to it
-- [X] Application controllers: **`WeekController`**, **`MatchController`**, **`LeagueController`** in `com.sportsmanager.application`
-- [X] Targeted tests: **`StandingsCalculatorTest`** (compare + `compute`), **`FootballMatchEngineStructureTest`**, **`SimulationControllersTest`** (week play + 2-team season)
+- [X] `FootballMatchEngine` extends **`AbstractMatchEngine`** (phase loop + `finishMatch` + event list)
+- [X] **`StandingsCalculator`** + delegation from **`FootballLeague`**
+- [X] **`WeekController`**, **`MatchController`**, **`LeagueController`** (`com.sportsmanager.application`)
+- [X] Tests: **`StandingsCalculatorTest`**, **`FootballMatchEngineStructureTest`**, **`SimulationControllersTest`**, **`SimulationIntegrationTest`**
 
-**Pool 3 in one line:** Done — engine abstraction, standings calculator, controllers, and supporting tests are in place.
+**Pool 3 in one line:** Done.
 
 ---
 
@@ -51,17 +51,15 @@ How this repo lines up with the course pools.
 
 **Goal:** Maven, JSON save/load, runnable app.
 
-- [X] Java 21 + JavaFX 21 + JUnit 5 in `pom.xml`
-- [ ] Gson **or** Jackson dependency *(not added yet)*
-- [X] `GameRepository` interface
-- [ ] `JsonGameRepository` implementation
-- [ ] `Main.java` entry that actually runs *(currently empty)*
-- [ ] JavaFX wiring: `MainMenuController`, `DashboardController`, `MatchViewController` *(placeholder FXML points at a wrong `HelloController` package)*
-- [ ] ~3 tests for JSON save/load of `GameSession`
-- [ ] Reliable **`mvn clean compile` with JavaFX** on a typical machine *(JavaFX `requires` were removed from `module-info` so the project compiles without a JavaFX module path; add them back with the JavaFX Maven plugin when you ship UI)*
-- [ ] `mvn exec:java` meaningful once `Main` exists
+- [X] Java **21**, **JavaFX 21**, **JUnit 5**, **Gson** in `pom.xml` (+ `javafx-maven-plugin`, `maven-compiler-plugin`)
+- [X] **`JsonGameRepository`** (`GameRepository` implementation; default `gamesession.json`)
+- [X] **`Main.java`** — runnable **console** demo (registry, session, save/load, week loop)
+- [ ] Full **JavaFX product UI** (`MainMenuController`, `DashboardController`, `MatchViewController`) — only a placeholder **`hello-view.fxml`** exists today
+- [X] JSON persistence tests — **`JsonGameRepositoryTest`**
+- [X] **`mvn clean compile`** and **`mvn test`** on a normal JDK 21 install
+- [X] **`mvn exec:java`** runs the console `Main`
 
-**Pool 4 in one line:** POM skeleton yes; persistence, UI, and green builds are the main gap.
+**Pool 4 in one line:** Core infra + console runner + JSON are in place; a full JavaFX shell is still optional / future work.
 
 ---
 
@@ -69,35 +67,34 @@ How this repo lines up with the course pools.
 
 **Goal:** Marks, report, clean handoff, release.
 
-- [X] Test count: **~43** `@Test` methods across `FootballTest`, `FrameworkTest`, `StandingsCalculatorTest`, `FootballMatchEngineStructureTest`, `SimulationControllersTest`
-- [X] Week / season style checks: **`SimulationControllersTest`** (play a week, advance week, 2-team double round-robin) — add more if the brief asks for a higher integration count
+- [X] Test volume: **~57** `@Test` methods across the test tree (domain, football, session JSON, integration)
+- [X] Integration-style flows: e.g. **`SimulationControllersTest`**, **`SimulationIntegrationTest`**
 - [ ] M2 PDF: “what changed from M1 and why”
-- [ ] Repo verified on a **fresh clone**: `mvn clean compile`, `mvn test`, `mvn exec:java` all green
-- [ ] GitHub **Release** before the course deadline
-- [ ] Small **`.txt`** file with the repository URL *(if the course asks for it)*
+- [ ] Repo smoke on a **fresh clone** you personally verify (`mvn clean compile`, `mvn test`, `mvn exec:java`) before submission
+- [ ] GitHub **Release** before the course deadline (if required)
+- [ ] **`.txt`** with repository URL (if the course asks for it)
 
-**Pool 5 in one line:** Tests exist in bulk; submission polish (PDF, release, green Maven, integration tests) is still open.
+**Pool 5 in one line:** Code and tests are strong; remaining work is mostly **documentation + release hygiene**.
 
 ---
 
 ## At a glance
 
 - [X] **Pool 1** — domain code  
-- [ ] **Pool 1** — `GameSession` tests (if you treat the brief strictly)  
+- [ ] **Pool 1** — extra `GameSession`-only tests *(optional / rubric-dependent)*  
 - [X] **Pool 2** — football + tests  
 - [X] **Pool 3** — engine + standings + controllers + tests  
-- [ ] **Pool 4** — JSON repo, runnable UI, Gson/Jackson, stable Maven  
-- [ ] **Pool 5** — PDF, release, fresh-clone checks *(integration-style week tests exist; still verify full Maven + `exec:java` once Pool 4 lands)*  
+- [X] **Pool 4** — Maven + Gson + JSON repo + console `Main` + tests *(JavaFX “full UI” still open)*  
+- [ ] **Pool 5** — PDF, release, submission checklist  
 
 ---
 
 ## Suggested order of attack
 
-1. [ ] Pool 4 — JSON + `Main` + JavaFX (restore `module-info` JavaFX `requires` + plugin / module path as needed)  
-2. [X] Pool 3 — *(done)*  
-3. [ ] Pool 1 / 5 — `GameSession` tests + any extra integration padding the rubric asks for  
-4. [ ] Pool 5 — M2 PDF, GitHub Release, repo URL file  
+1. [ ] Pool 5 — M2 PDF, optional GitHub Release, repo URL file, final clone smoke test  
+2. [ ] Pool 4 (optional) — replace placeholder FXML with real JavaFX screens if the brief requires GUI beyond console  
+3. [ ] Pool 1 / 5 — add `GameSession` tests if the rubric is strict  
 
 ---
 
-*Last reviewed: **2026-04-11** (Pool 3 marked complete in roadmap.)*
+*Last reviewed: **2026-04-11** — aligned with repo (`README.md`, `Main`, `JsonGameRepository`, tests).*
