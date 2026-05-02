@@ -14,6 +14,7 @@ import com.sportsmanager.domain.sport.SportRegistry;
 import com.sportsmanager.domain.team.ITeam;
 
 import com.sportsmanager.football.FootballSport;
+import com.sportsmanager.volleyball.VolleyballSport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +41,8 @@ public class Main {
 
         // For now, auto-select the first registered sport.
         // When the JavaFX UI is ready, SportSelectionView will let the user choose.
-        Sport selectedSport = registry.getAll().get(0);
+        // Sport selectedSport = registry.getAll().get(0);
+        Sport selectedSport = registry.getAll().get(1); //Volleyball
         System.out.println("Sport: " + selectedSport.getName());
 
         // ── 2. Create game objects through the factory ─────────────────
@@ -79,7 +81,7 @@ public class Main {
             List<StandingEntry> standings = leagueController.getStandings(session);
             System.out.println("\nWeek " + session.getCurrentWeek() + " Standings:");
             for (StandingEntry entry : standings) {
-                System.out.printf("  %-20s %2d pts  (GD %+d)%n",
+                System.out.printf("  %-20s %2d pts  (SD %+d)%n",
                         entry.getTeam().getName(),
                         entry.getPoints(),
                         entry.getGoalsFor() - entry.getGoalsAgainst());
@@ -104,8 +106,8 @@ public class Main {
     private static SportRegistry buildRegistry() {
         SportRegistry registry = new SportRegistry();
         registry.register(new FootballSport());
+        registry.register(new VolleyballSport());
         // registry.register(new BasketballSport());   // future
-        // registry.register(new VolleyballSport());    // future
         return registry;
     }
 

@@ -4,6 +4,7 @@ import com.sportsmanager.domain.league.ILeague;
 import com.sportsmanager.domain.simulation.IMatchEngine;
 import com.sportsmanager.domain.sport.SportFactory;
 import com.sportsmanager.domain.team.*;
+import com.sportsmanager.volleyball.VolleyballMatchEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -147,6 +148,7 @@ public class FootballFactory implements SportFactory {
             case DF -> FootballPosition.CB;
             case MF -> FootballPosition.CM;
             case FW -> FootballPosition.ST;
+            default -> FootballPosition.CM; // for volleyball or/and other sports' cases
         };
     }
 
