@@ -20,18 +20,26 @@ class FootballMatchEngineStructureTest {
     }
 
     @Test
-    void seededEngineProducesDeterministicScores() {
-        FootballFactory factory = new FootballFactory();
-        ITeam home = factory.createTeam("H", "h.png");
-        ITeam away = factory.createTeam("A", "a.png");
+    void seededEngineProducesDeterministicScoresWhenSquadsAreIdentical() {
+        FootballTeam home = deterministicSquadTeam("H");
+        FootballTeam away = deterministicSquadTeam("A");
 
         IMatchResult r1 = new FootballMatchEngine(new Random(2026L)).simulate(home, away);
-        ITeam home2 = factory.createTeam("H", "h.png");
-        ITeam away2 = factory.createTeam("A", "a.png");
-        IMatchResult r2 = new FootballMatchEngine(new Random(2026L)).simulate(home2, away2);
+        IMatchResult r2 = new FootballMatchEngine(new Random(2026L)).simulate(
+                deterministicSquadTeam("H"), deterministicSquadTeam("A"));
 
         assertEquals(r1.getHomeScore(), r2.getHomeScore());
         assertEquals(r1.getAwayScore(), r2.getAwayScore());
+    }
+
+    /** Same composition each call so match RNG is the only variable controlled by the engine seed. */
+    private static FootballTeam deterministicSquadTeam(String clubName) {
+        FootballTeam t = new FootballTeam(clubName, "logo.png");
+        t.addPlayer(new FootballPlayer("GK", 25, FootballPosition.GK, 55, 55, 55, 55, 55, 55, 80));
+        for (int i = 0; i < 10; i++) {
+            t.addPlayer(new FootballPlayer("P" + i, 25, FootballPosition.CM, 60, 60, 60, 60, 60, 60, 30));
+        }
+        return t;
     }
 
     @Test

@@ -73,7 +73,7 @@ public class Main {
 
         System.out.println("\n--- Season Simulation ---");
         for (int i = 0; i < WEEKS_TO_SIMULATE; i++) {
-            weekController.advanceWeek(session);
+            // Play the current gameweek first, then advance the calendar (week 1 was never played before).
             matchController.playCurrentWeek(session, engine);
 
             List<StandingEntry> standings = leagueController.getStandings(session);
@@ -84,6 +84,7 @@ public class Main {
                         entry.getPoints(),
                         entry.getGoalsFor() - entry.getGoalsAgainst());
             }
+            weekController.advanceWeek(session);
         }
 
         // ── 6. Reload and verify ─────────────────────────────────────

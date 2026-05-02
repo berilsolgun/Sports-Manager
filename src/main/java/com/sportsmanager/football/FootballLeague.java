@@ -7,6 +7,7 @@ import com.sportsmanager.domain.league.StandingEntry;
 import com.sportsmanager.domain.league.StandingsCalculator;
 import com.sportsmanager.domain.team.ITeam;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,23 +24,53 @@ public class FootballLeague extends AbstractLeague {
         generateFixtures();
     }
 
+    /**
+     * Double round-robin: each gameweek has {@code n/2} matches (for even {@code n}),
+     * so every real team plays once per week. Odd team counts use a bye slot (no fixture).
+     */
     private void generateFixtures() {
-        int n = teams.size();
-        int week = 1;
-
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                fixtures.add(new FootballFixture(teams.get(i), teams.get(j), week));
-                week++;
-            }
+        int teamCount = teams.size();
+        if (teamCount < 2) {
+            return;
         }
 
-        int secondHalfStart = week;
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                fixtures.add(new FootballFixture(teams.get(j), teams.get(i), secondHalfStart));
-                secondHalfStart++;
+        List<ITeam> roster = new ArrayList<>(teams);
+        if (teamCount % 2 == 1) {
+            roster.add(null);
+        }
+        int n = roster.size();
+        int rounds = n - 1;
+        int half = n / 2;
+        int week = 1;
+
+        List<List<FootballFixture>> firstHalfByRound = new ArrayList<>();
+
+        for (int r = 0; r < rounds; r++) {
+            List<FootballFixture> roundFixtures = new ArrayList<>();
+            for (int i = 0; i < half; i++) {
+                ITeam a = roster.get(i);
+                ITeam b = roster.get(n - 1 - i);
+                if (a == null || b == null) {
+                    continue;
+                }
+                FootballFixture fx = new FootballFixture(a, b, week);
+                fixtures.add(fx);
+                roundFixtures.add(fx);
             }
+            firstHalfByRound.add(roundFixtures);
+            ITeam tail = roster.remove(n - 1);
+            roster.add(1, tail);
+            week++;
+        }
+
+        for (int r = 0; r < rounds; r++) {
+            for (FootballFixture firstLeg : firstHalfByRound.get(r)) {
+                fixtures.add(new FootballFixture(
+                        firstLeg.getAwayTeam(),
+                        firstLeg.getHomeTeam(),
+                        week));
+            }
+            week++;
         }
     }
 
