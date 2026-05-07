@@ -21,6 +21,27 @@ public class VolleyballMatchEngine extends AbstractMatchEngine {
     public VolleyballMatchEngine(Random random) {
         this.random = random;
     }
+    @Override
+public IMatchResult simulate(ITeam home, ITeam away) {
+    clearMatchEvents();
+    int homeSets = 0;
+    int awaySets = 0;
+
+    for (int setNumber = 1; setNumber <= 5; setNumber++) {
+        PhaseResult pr = simulatePhase(home, away, setNumber);
+        if (pr.homeScore > pr.awayScore) {
+            homeSets++;
+        } else {
+            awaySets++;
+        }
+        // 3 sete ulaşan takım kazanır, maç biter
+        if (homeSets == 3 || awaySets == 3) {
+            break;
+        }
+    }
+
+    return finishMatch(home, away, homeSets, awaySets);
+}
 
     @Override
     protected int getPhaseCount() {
