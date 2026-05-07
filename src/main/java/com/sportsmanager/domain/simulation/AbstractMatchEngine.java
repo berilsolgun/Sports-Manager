@@ -40,7 +40,7 @@ public abstract class AbstractMatchEngine implements IMatchEngine {
     protected abstract IMatchResult finishMatch(ITeam home, ITeam away, int homeScore, int awayScore);
 
     @Override
-    public final IMatchResult simulate(ITeam home, ITeam away) {
+    public  IMatchResult simulate(ITeam home, ITeam away) {
         clearMatchEvents();
         int homeScore = 0;
         int awayScore = 0;
