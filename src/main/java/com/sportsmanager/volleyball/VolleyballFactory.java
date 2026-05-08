@@ -97,7 +97,7 @@ public class VolleyballFactory implements SportFactory {
         return tactics;
     }
 
-    private VolleyballPlayer generateRandomPlayer(VolleyballPosition pos) {
+    public VolleyballPlayer generateRandomPlayer(VolleyballPosition pos) {
         String name = PLAYER_NAMES[random.nextInt(PLAYER_NAMES.length)];
         int age = 18 + random.nextInt(15);
         return generatePlayerWithAttributes(name, age, pos);

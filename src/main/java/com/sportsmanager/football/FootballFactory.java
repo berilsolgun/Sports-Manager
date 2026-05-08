@@ -114,7 +114,7 @@ public class FootballFactory implements SportFactory {
         return tactics;
     }
 
-    private FootballPlayer generateRandomPlayer(FootballPosition pos) {
+    public FootballPlayer generateRandomPlayer(FootballPosition pos) {
         String name = PLAYER_NAMES[random.nextInt(PLAYER_NAMES.length)];
         int age = 18 + random.nextInt(18);
         return generatePlayerWithAttributes(name, age, pos);
