@@ -1,37 +1,45 @@
 package com.sportsmanager.ui;
-import com.sportsmanager.domain.session.GameRepository;
-import com.sportsmanager.domain.session.JsonGameRepository;
-import javafx.stage.FileChooser;
+
 import com.sportsmanager.application.LeagueController;
 import com.sportsmanager.application.MatchController;
 import com.sportsmanager.application.WeekController;
 import com.sportsmanager.domain.league.StandingEntry;
+import com.sportsmanager.domain.session.GameRepository;
 import com.sportsmanager.domain.session.GameSession;
+import com.sportsmanager.domain.session.JsonGameRepository;
 import com.sportsmanager.domain.simulation.IMatchEngine;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import com.sportsmanager.domain.team.Tactic;
+
 import java.io.File;
 import java.util.List;
 
 public class DashboardScreen {
 
     private final Stage stage;
-    private  GameSession session;
-    private  IMatchEngine engine;
+    private final GameSession session;
+    private final IMatchEngine engine;
     private final MatchController matchController = new MatchController();
     private final WeekController weekController = new WeekController();
     private final LeagueController leagueController = new LeagueController();
 
+    private Scene scene;
     private Label weekLabel;
     private Label teamLabel;
+    private ImageView logoView;
     private TableView<StandingRow> standingsTable;
     private TextArea logArea;
 
@@ -42,21 +50,41 @@ public class DashboardScreen {
     }
 
     public Scene createScene() {
+        if (scene == null) {
+            buildScene();
+        }
+        refreshUiState();
+        return scene;
+    }
+
+    public Scene getScene() {
+        return createScene();
+    }
+
+    private void buildScene() {
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
-root.setStyle("-fx-background-color: " + bgColor + ";");
+        root.setStyle("-fx-background-color: " + bgColor + ";");
 
         String sportName = session.getSport().getName();
 
         Label title = new Label(sportName + " Manager");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #e94560;");
 
-        teamLabel = new Label("Team: " + session.getPlayerTeam().getName());
+        logoView = new ImageView();
+        logoView.setFitHeight(56);
+        logoView.setFitWidth(56);
+        logoView.setPreserveRatio(true);
+
+        teamLabel = new Label();
         teamLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #eaeaea;");
 
-        weekLabel = new Label("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
+        weekLabel = new Label();
         weekLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #a8a8a8;");
+
+        HBox top = new HBox(12, logoView, title);
+        top.setAlignment(Pos.CENTER_LEFT);
 
         HBox buttons = createButtonBar();
 
@@ -69,88 +97,96 @@ root.setStyle("-fx-background-color: " + bgColor + ";");
         logArea.setStyle("-fx-control-inner-background: #1a1a2e; -fx-text-fill: #eaeaea; -fx-font-family: monospace;");
         logArea.setPromptText("Match log will appear here...");
 
-        root.getChildren().addAll(title, teamLabel, weekLabel, buttons, standingsTable, logArea);
-        refreshStandings();
+        root.getChildren().addAll(top, teamLabel, weekLabel, buttons, standingsTable, logArea);
+        scene = new Scene(root, 780, 680);
+    }
 
-        return new Scene(root, 750, 650);
+    private void refreshUiState() {
+        teamLabel.setText("Team: " + session.getPlayerTeam().getName());
+        weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
+        var img = UiLogo.loadTeamLogo(session.getSport(), session.getPlayerTeam().getLogo());
+        logoView.setImage(img);
+        refreshStandings();
     }
 
     private HBox createButtonBar() {
-    Button simulateBtn = styledButton("Simulate Week");
-    simulateBtn.setOnAction(e -> onSimulateWeek());
+        Button simulateBtn = styledButton("Simulate Week");
+        simulateBtn.setOnAction(e -> onSimulateWeek());
 
-    Button squadBtn = styledButton("View Squad");
-    squadBtn.setOnAction(e -> showSquadScreen());
+        Button squadBtn = styledButton("View Squad");
+        squadBtn.setOnAction(e -> showSquadScreen());
 
-    Button saveBtn = styledButton("Save Game");
-    saveBtn.setOnAction(e -> onSaveGame());
+        Button scheduleBtn = styledButton("Schedule");
+        scheduleBtn.setOnAction(e -> stage.setScene(
+                new ScheduleScreen(stage, session, () -> stage.setScene(createScene())).createScene()));
 
-    
+        Button saveBtn = styledButton("Save Game");
+        saveBtn.setOnAction(e -> onSaveGame());
 
-    HBox bar = new HBox(12, simulateBtn, squadBtn, saveBtn);
-    bar.setAlignment(Pos.CENTER_LEFT);
-    return bar;
-}
+        HBox bar = new HBox(12, simulateBtn, squadBtn, scheduleBtn, saveBtn);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        return bar;
+    }
 
-private void onSaveGame() {
-    FileChooser chooser = new FileChooser();
-    chooser.setTitle("Save Game");
-    chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Save Files (*.json)", "*.json"));
-    chooser.setInitialFileName("savegame.json");
-    File file = chooser.showSaveDialog(stage);
-    if (file != null) {
-        try {
-            GameRepository repo = new JsonGameRepository(file.getAbsolutePath());
-            repo.save(session);
-            logArea.appendText("Game saved to " + file.getName() + "\n");
-        } catch (Exception ex) {
-            logArea.appendText("Save failed: " + ex.getMessage() + "\n");
+    private void onSaveGame() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Save Game");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Save Files (*.json)", "*.json"));
+        chooser.setInitialFileName("savegame.json");
+        File file = chooser.showSaveDialog(stage);
+        if (file != null) {
+            try {
+                GameRepository repo = new JsonGameRepository(file.getAbsolutePath());
+                repo.save(session);
+                logArea.appendText("Game saved to " + file.getName() + "\n");
+            } catch (Exception ex) {
+                logArea.appendText("Save failed: " + ex.getMessage() + "\n");
+            }
         }
     }
-}
 
-
-
-   private void onSimulateWeek() {
-    if (leagueController.isSeasonComplete(session)) {
-        SeasonEndScreen endScreen = new SeasonEndScreen(stage, session, engine);
-        stage.setScene(endScreen.createScene());
-        return;
-    }
-
-    // Show tactic selection before simulating
-    TacticSelectionScreen tacticScreen = new TacticSelectionScreen(stage, session, chosenTactic -> {
-        logArea.appendText("Tactic chosen: " + chosenTactic.getName() + "\n");
-        stage.setScene(getScene());
-        runWeekSimulation();
-    });
-    stage.setScene(tacticScreen.createScene());
-}
-
-private void runWeekSimulation() {
-    int week = session.getCurrentWeek();
-    matchController.playCurrentWeek(session, engine);
-    StringBuilder sb = new StringBuilder();
-    sb.append("--- Week ").append(week).append(" Results ---\n");
-    session.getLeague().getWeekFixtures(week).forEach(f -> {
-        f.getResult().ifPresent(r -> {
-            sb.append(String.format("  %s %d - %d %s\n",
-                    f.getHomeTeam().getName(), r.getHomeScore(),
-                    r.getAwayScore(), f.getAwayTeam().getName()));
-        });
-    });
-    logArea.appendText(sb.toString());
-    weekController.advanceWeek(session);
-    weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
-    refreshStandings();
-// Check if season just ended
+    private void onSimulateWeek() {
         if (leagueController.isSeasonComplete(session)) {
-            SeasonEndScreen endScreen = new SeasonEndScreen(stage, session, engine);
-            stage.setScene(endScreen.createScene());
+            stage.setScene(new SeasonEndScreen(stage, session, engine).createScene());
+            return;
         }
 
+        TacticSelectionScreen tacticScreen = new TacticSelectionScreen(stage, session, chosenTactic -> {
+            logArea.appendText("Tactic chosen: " + chosenTactic.getName() + "\n");
+            stage.setScene(new LineupScreen(stage, session, this::runWeekAfterLineup).createScene());
+        });
+        stage.setScene(tacticScreen.createScene());
+    }
 
-}
+    private void runWeekAfterLineup() {
+        int week = session.getCurrentWeek();
+        matchController.playCurrentWeek(session, engine, false);
+
+        var pending = matchController.findPlayerFixtureThisWeek(session, week);
+        if (pending.isPresent()) {
+            stage.setScene(new LiveMatchScreen(stage, session, engine, pending.get(),
+                    () -> finishWeekAfterMatches(week)).createScene());
+        } else {
+            finishWeekAfterMatches(week);
+        }
+    }
+
+    private void finishWeekAfterMatches(int weekPlayed) {
+        matchController.applyGameweekInjuryRecovery(session);
+        weekController.advanceWeek(session);
+        logArea.appendText("--- Week " + weekPlayed + " finished. Injury recovery applied. Training complete. ---\n");
+        session.getLeague().getWeekFixtures(weekPlayed).forEach(f ->
+                f.getResult().ifPresent(r -> logArea.appendText(String.format("  %s %d - %d %s%n",
+                        f.getHomeTeam().getName(), r.getHomeScore(), r.getAwayScore(), f.getAwayTeam().getName()))));
+
+        if (leagueController.isSeasonComplete(session)) {
+            stage.setScene(new SeasonEndScreen(stage, session, engine).createScene());
+            return;
+        }
+
+        stage.setScene(createScene());
+    }
+
     private void showSquadScreen() {
         SquadScreen squadScreen = new SquadScreen(stage, this, session);
         stage.setScene(squadScreen.createScene());
@@ -198,10 +234,6 @@ private void runWeekSimulation() {
         }
     }
 
-    public Scene getScene() {
-        return createScene();
-    }
-
     private Button styledButton(String text) {
         Button btn = new Button(text);
         btn.setStyle("-fx-font-size: 14px; -fx-background-color: #0f3460; -fx-text-fill: white; "
@@ -215,7 +247,13 @@ private void runWeekSimulation() {
 
     public static class StandingRow {
         private final String teamName;
-        private final int played, won, drawn, lost, goalsFor, goalsAgainst, points;
+        private final int played;
+        private final int won;
+        private final int drawn;
+        private final int lost;
+        private final int goalsFor;
+        private final int goalsAgainst;
+        private final int points;
 
         public StandingRow(String teamName, int played, int won, int drawn, int lost,
                            int goalsFor, int goalsAgainst, int points) {
@@ -229,14 +267,40 @@ private void runWeekSimulation() {
             this.points = points;
         }
 
-        public String getTeamName() { return teamName; }
-        public int getPlayed() { return played; }
-        public int getWon() { return won; }
-        public int getDrawn() { return drawn; }
-        public int getLost() { return lost; }
-        public int getGoalsFor() { return goalsFor; }
-        public int getGoalsAgainst() { return goalsAgainst; }
-        public int getGoalDifference() { return goalsFor - goalsAgainst; }
-        public int getPoints() { return points; }
+        public String getTeamName() {
+            return teamName;
+        }
+
+        public int getPlayed() {
+            return played;
+        }
+
+        public int getWon() {
+            return won;
+        }
+
+        public int getDrawn() {
+            return drawn;
+        }
+
+        public int getLost() {
+            return lost;
+        }
+
+        public int getGoalsFor() {
+            return goalsFor;
+        }
+
+        public int getGoalsAgainst() {
+            return goalsAgainst;
+        }
+
+        public int getGoalDifference() {
+            return goalsFor - goalsAgainst;
+        }
+
+        public int getPoints() {
+            return points;
+        }
     }
 }

@@ -4,9 +4,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.sportsmanager.domain.league.IMatchResult;
+import com.sportsmanager.domain.team.Tactic;
+import com.sportsmanager.domain.team.IPlayer;
+import com.sportsmanager.football.FootballFactory;
+import com.sportsmanager.football.FootballPlayer;
+import com.sportsmanager.football.FootballPosition;
+import com.sportsmanager.football.FootballSport;
+import com.sportsmanager.football.FootballTeam;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -144,5 +155,65 @@ class JsonGameRepositoryTest {
 
         assertTrue(loaded.isPresent());
         assertEquals(0, loaded.get().getCurrentWeek());
+    }
+
+    @Test
+    void roundTripPreservesCoachesTacticStartingElevenAndFixtureMetadata() {
+        FootballSport sport = new FootballSport();
+        FootballFactory factory = new FootballFactory();
+        FootballTeam t1 = (FootballTeam) factory.createTeam("Alpha FC", "alpha_fc.png");
+        var t2 = factory.createTeam("Beta FC", "beta_fc.png");
+        t1.setTactic(new Tactic("4-3-3", 1.1, 0.95));
+        List<com.sportsmanager.domain.team.IPlayer> starters = validFootballStarters(t1);
+        t1.setStartingEleven(starters);
+
+        GameSession session = new GameSession();
+        session.setSport(sport);
+        session.setSeason(1);
+        session.setCurrentWeek(1);
+        session.setPlayerTeam(t1);
+        session.setLeague(factory.createLeague("Test League", List.of(t1, t2)));
+
+        var league = session.getLeague();
+        var fx = league.getWeekFixtures(1).get(0);
+        var engine = factory.createMatchEngine();
+        IMatchResult result = engine.simulate(fx.getHomeTeam(), fx.getAwayTeam());
+        league.recordResult(fx, result);
+
+        repo.save(session);
+        Optional<GameSession> loaded = repo.load();
+        assertTrue(loaded.isPresent());
+        GameSession s2 = loaded.get();
+        assertEquals(2, s2.getLeague().getTeams().size());
+        var lt = s2.getPlayerTeam();
+        assertFalse(lt.getCoaches().isEmpty());
+        assertNotNull(lt.getCurrentTactic());
+        assertEquals("4-3-3", lt.getCurrentTactic().getName());
+        assertEquals(11, lt.getStartingEleven().size());
+
+        var played = s2.getLeague().getFixtures().stream().filter(f -> f.isPlayed()).findFirst();
+        assertTrue(played.isPresent());
+        var r = played.get().getResult().orElseThrow();
+        assertEquals(result.getHomeScore(), r.getHomeScore());
+        assertEquals(result.getAwayScore(), r.getAwayScore());
+        assertEquals(result.getHomePoints(), r.getHomePoints());
+        assertEquals(result.getAwayPoints(), r.getAwayPoints());
+        assertEquals(result.getEvents().size(), r.getEvents().size());
+    }
+
+    private static List<IPlayer> validFootballStarters(FootballTeam team) {
+        List<IPlayer> squad = new ArrayList<>(team.getSquad());
+        IPlayer gk = squad.stream()
+                .filter(p -> p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK)
+                .findFirst()
+                .orElseThrow();
+        List<IPlayer> others = squad.stream()
+                .filter(p -> !(p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK))
+                .limit(10)
+                .toList();
+        List<IPlayer> lineup = new ArrayList<>();
+        lineup.add(gk);
+        lineup.addAll(others);
+        return lineup;
     }
 }

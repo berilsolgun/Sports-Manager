@@ -23,9 +23,6 @@ import java.util.List;
 
 /**
  * Console-based entry point for Sports Manager.
- * Demonstrates the full game loop using only framework interfaces.
- * The only football-specific reference is the one-time registration in
- * {@link #buildRegistry()}.
  */
 public class Main {
 
@@ -36,16 +33,32 @@ public class Main {
 
         System.out.println("=== Sports Manager ===\n");
 
-        // ── 1. Register available sports ──────────────────────────────
         SportRegistry registry = buildRegistry();
+        List<Sport> sports = registry.getAll();
+        if (sports.isEmpty()) {
+            System.err.println("No sports registered.");
+            return;
+        }
 
-        // For now, auto-select the first registered sport.
-        // When the JavaFX UI is ready, SportSelectionView will let the user choose.
-        // Sport selectedSport = registry.getAll().get(0);
-        Sport selectedSport = registry.getAll().get(1); //Volleyball
-        System.out.println("Sport: " + selectedSport.getName());
+        int sportIndex = 0;
+        if (args.length > 0) {
+            try {
+                sportIndex = Integer.parseInt(args[0]);
+            } catch (NumberFormatException ignored) {
+                String name = args[0];
+                for (int i = 0; i < sports.size(); i++) {
+                    if (sports.get(i).getName().equalsIgnoreCase(name)) {
+                        sportIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        sportIndex = Math.floorMod(sportIndex, sports.size());
 
-        // ── 2. Create game objects through the factory ─────────────────
+        Sport selectedSport = sports.get(sportIndex);
+        System.out.println("Sport: " + selectedSport.getName() + " (index " + sportIndex + ")\n");
+
         SportFactory factory = selectedSport.createFactory();
         IMatchEngine engine = factory.createMatchEngine();
 
@@ -53,7 +66,6 @@ public class Main {
 
         ILeague league = factory.createLeague("Super Lig", teams);
 
-        // ── 3. Build the session ──────────────────────────────────────
         GameSession session = new GameSession();
         session.setSport(selectedSport);
         session.setCurrentWeek(1);
@@ -63,19 +75,16 @@ public class Main {
 
         System.out.println("Player team: " + session.getPlayerTeam().getName());
 
-        // ── 4. Persist ───────────────────────────────────────────────
         JsonGameRepository repo = new JsonGameRepository();
         repo.save(session);
         System.out.println("Session saved to: " + repo.getFilePath());
 
-        // ── 5. Simulate a few weeks ──────────────────────────────────
         WeekController weekController = new WeekController();
         MatchController matchController = new MatchController();
         LeagueController leagueController = new LeagueController();
 
         System.out.println("\n--- Season Simulation ---");
         for (int i = 0; i < WEEKS_TO_SIMULATE; i++) {
-            // Play the current gameweek first, then advance the calendar (week 1 was never played before).
             matchController.playCurrentWeek(session, engine);
 
             List<StandingEntry> standings = leagueController.getStandings(session);
@@ -86,10 +95,10 @@ public class Main {
                         entry.getPoints(),
                         entry.getGoalsFor() - entry.getGoalsAgainst());
             }
+            matchController.applyGameweekInjuryRecovery(session);
             weekController.advanceWeek(session);
         }
 
-        // ── 6. Reload and verify ─────────────────────────────────────
         repo.save(session);
         repo.load().ifPresent(s ->
                 System.out.println("\nSession loaded. Week: " + s.getCurrentWeek()
@@ -97,24 +106,13 @@ public class Main {
         );
     }
 
-    // ── helpers ───────────────────────────────────────────────────────
-
-    /**
-     * Builds and populates the global sport registry.
-     * Add new sports here when they are implemented.
-     */
     private static SportRegistry buildRegistry() {
         SportRegistry registry = new SportRegistry();
         registry.register(new FootballSport());
         registry.register(new VolleyballSport());
-        // registry.register(new BasketballSport());   // future
         return registry;
     }
 
-    /**
-     * Creates {@code count} random teams via the given factory,
-     * using the sport-specific team name pool.
-     */
     private static List<ITeam> createTeams(SportFactory factory, int count) {
         String[] allNames = factory.getTeamNames();
         List<String> nameList = new ArrayList<>(Arrays.asList(allNames));

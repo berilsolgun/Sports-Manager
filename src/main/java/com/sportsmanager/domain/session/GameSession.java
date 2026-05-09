@@ -15,7 +15,8 @@ public class GameSession {
     private Sport sport;
     private int currentWeek;
     private int season;
-    private int championshipCount = 0;
+    private int championshipCount;
+
     public ITeam getPlayerTeam() {
         return playerTeam;
     }
@@ -59,6 +60,18 @@ public class GameSession {
         this.season = season;
     }
 
+    public int getChampionshipCount() {
+        return championshipCount;
+    }
+
+    public void setChampionshipCount(int championshipCount) {
+        this.championshipCount = championshipCount;
+    }
+
+    public void incrementChampionshipCount() {
+        this.championshipCount++;
+    }
+
     @Override
     public String toString() {
         String sportName = (sport != null) ? sport.getName() : "N/A";
@@ -68,16 +81,4 @@ public class GameSession {
                 + ", week=" + currentWeek
                 + ", season=" + season + "}";
     }
-
-    public int getChampionshipCount() {
-    return championshipCount;
-}
-
-public void setChampionshipCount(int championshipCount) {
-    this.championshipCount = championshipCount;
-}
-
-public void incrementChampionshipCount() {
-    this.championshipCount++;
-}
 }

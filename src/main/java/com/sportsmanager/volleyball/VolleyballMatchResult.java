@@ -9,6 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Match result using set counts as {@link #getHomeScore()} / {@link #getAwayScore()}.
+ * League table points follow common volleyball league conventions:
+ * <ul>
+ *   <li>3–0 or 3–1 win → 3 pts for winner, 0 for loser</li>
+ *   <li>3–2 win → 2 pts for winner, 1 for loser</li>
+ * </ul>
+ * Mirrored for the away side winning.
+ */
 public class VolleyballMatchResult implements IMatchResult {
     private final int homeSets;
     private final int awaySets;

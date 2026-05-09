@@ -20,6 +20,11 @@ public class VolleyballSport implements Sport {
     }
 
     @Override
+    public int getStartingLineupSize() {
+        return 6;
+    }
+
+    @Override
     public int getMatchPhaseCount() {
         return 5;
     }

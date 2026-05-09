@@ -289,14 +289,27 @@ class VolleyballTest {
         assertEquals((p1.getOverallRating() + p2.getOverallRating()) / 2, t.getTeamRating());
     }
 
+    /** Six starters drawn from the match-day squad: ≥1 setter, ≤1 libero. */
     private List<IPlayer> buildValidLineup() {
+        List<VolleyballPlayer> all = team.getSquad().stream()
+                .filter(p -> p instanceof VolleyballPlayer)
+                .map(p -> (VolleyballPlayer) p)
+                .toList();
+        VolleyballPlayer setter = all.stream()
+                .filter(p -> p.getVolleyballPosition() == VolleyballPosition.SETTER)
+                .findFirst()
+                .orElseThrow();
+        VolleyballPlayer libero = all.stream()
+                .filter(p -> p.getVolleyballPosition() == VolleyballPosition.LIBERO)
+                .findFirst()
+                .orElseThrow();
         List<IPlayer> lineup = new ArrayList<>();
-        lineup.add(new VolleyballPlayer("S1", 25, VolleyballPosition.SETTER, 60, 80, 50, 50, 50, 50, 60));
-        lineup.add(new VolleyballPlayer("L1", 25, VolleyballPosition.LIBERO, 50, 50, 50, 40, 80, 85, 55));
-        lineup.add(new VolleyballPlayer("MB1", 25, VolleyballPosition.MIDDLE_BLOCKER, 55, 50, 65, 80, 50, 55, 70));
-        lineup.add(new VolleyballPlayer("MB2", 25, VolleyballPosition.MIDDLE_BLOCKER, 55, 50, 65, 80, 50, 55, 70));
-        lineup.add(new VolleyballPlayer("OH1", 25, VolleyballPosition.OUTSIDE_HITTER, 65, 55, 75, 55, 60, 70, 65));
-        lineup.add(new VolleyballPlayer("OPP1", 25, VolleyballPosition.OPPOSITE_HITTER, 65, 50, 80, 60, 50, 55, 70));
+        lineup.add(setter);
+        lineup.add(libero);
+        all.stream()
+                .filter(p -> p != setter && p != libero && p.getVolleyballPosition() != VolleyballPosition.LIBERO)
+                .limit(4)
+                .forEach(lineup::add);
         return lineup;
     }
 

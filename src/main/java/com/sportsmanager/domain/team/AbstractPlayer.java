@@ -35,6 +35,11 @@ public abstract class AbstractPlayer implements IPlayer {
     }
 
     @Override
+    public int getInjuryGamesRemaining() {
+        return injuryGamesRemaining;
+    }
+
+    @Override
     public void injure(int games){
         this.injuryGamesRemaining = games;
     }
@@ -44,6 +49,16 @@ public abstract class AbstractPlayer implements IPlayer {
         if (injuryGamesRemaining > 0) {
             injuryGamesRemaining--;
         }
+    }
+
+    @Override
+    public void healFully() {
+        injuryGamesRemaining = 0;
+    }
+
+    @Override
+    public void incrementAge() {
+        age++;
     }
 
     public abstract int getOverallRating();

@@ -13,22 +13,24 @@ import java.util.stream.Collectors;
 
 public class FootballLeague extends AbstractLeague {
 
-    private static final int POINTS_FOR_WIN = 3;
-    private static final int POINTS_FOR_DRAW = 1;
-
-    private final StandingsCalculator standingsCalculator =
-            new StandingsCalculator(POINTS_FOR_WIN, POINTS_FOR_DRAW);
+    private final StandingsCalculator standingsCalculator = new StandingsCalculator();
 
     public FootballLeague(String name, List<ITeam> teams) {
         super(name, teams);
-        generateFixtures();
+        rebuildSchedule();
+    }
+
+    /** Clears results and rebuilds a fresh double round-robin schedule (new season). */
+    public void resetSeason() {
+        fixtures.clear();
+        rebuildSchedule();
     }
 
     /**
      * Double round-robin: each gameweek has {@code n/2} matches (for even {@code n}),
      * so every real team plays once per week. Odd team counts use a bye slot (no fixture).
      */
-    private void generateFixtures() {
+    private void rebuildSchedule() {
         int teamCount = teams.size();
         if (teamCount < 2) {
             return;

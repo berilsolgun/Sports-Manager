@@ -11,6 +11,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -22,10 +24,12 @@ public class TeamSelectionScreen {
     private final Stage stage;
     private final Sport sport;
     private final List<ITeam> teams;
+    private final Runnable navigateBackToNewOrLoad;
 
-    public TeamSelectionScreen(Stage stage, Sport sport) {
+    public TeamSelectionScreen(Stage stage, Sport sport, Runnable navigateBackToNewOrLoad) {
         this.stage = stage;
         this.sport = sport;
+        this.navigateBackToNewOrLoad = navigateBackToNewOrLoad;
         this.teams = generateTeams();
     }
 
@@ -75,7 +79,7 @@ public class TeamSelectionScreen {
         Button backBtn = new Button("Back");
         backBtn.setStyle("-fx-font-size: 13px; -fx-background-color: #444; -fx-text-fill: white; "
                 + "-fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 8 25;");
-        backBtn.setOnAction(e -> stage.setScene(new NewOrLoadScreen(stage, sport).createScene()));
+        backBtn.setOnAction(e -> navigateBackToNewOrLoad.run());
 
         root.getChildren().addAll(title, subtitle, scroll, backBtn);
         return new Scene(root, 600, 600);
@@ -85,7 +89,20 @@ public class TeamSelectionScreen {
         String baseStyle = "-fx-font-size: 14px; -fx-text-fill: white; -fx-background-radius: 8; "
                 + "-fx-cursor: hand; -fx-padding: 14 30; -fx-min-width: 380; "
                 + "-fx-text-alignment: center; -fx-alignment: center;";
-        Button btn = new Button(team.getName() + "\nAvg Rating: " + rating);
+        Button btn = new Button();
+        ImageView logo = new ImageView();
+        var img = UiLogo.loadTeamLogo(sport, team.getLogo());
+        if (img != null) {
+            logo.setImage(img);
+            logo.setFitHeight(36);
+            logo.setFitWidth(36);
+            logo.setPreserveRatio(true);
+        }
+        Label text = new Label(team.getName() + "\nAvg Rating: " + rating);
+        text.setStyle("-fx-text-fill: white;");
+        HBox row = new HBox(12, logo, text);
+        row.setAlignment(Pos.CENTER_LEFT);
+        btn.setGraphic(row);
         btn.setStyle("-fx-background-color: #0f3460; " + baseStyle);
         btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #e94560; " + baseStyle));
         btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: #0f3460; " + baseStyle));
@@ -102,7 +119,11 @@ public class TeamSelectionScreen {
         session.setSeason(2026);
 
         IMatchEngine engine = factory.createMatchEngine();
-        DashboardScreen dashboard = new DashboardScreen(stage, session, engine);
-        stage.setScene(dashboard.createScene());
+
+        stage.setScene(new TacticSelectionScreen(stage, session, tac ->
+                stage.setScene(new LineupScreen(stage, session, () -> {
+                    DashboardScreen dashboard = new DashboardScreen(stage, session, engine);
+                    stage.setScene(dashboard.createScene());
+                }).createScene())).createScene());
     }
 }

@@ -1,27 +1,28 @@
 package com.sportsmanager.application;
 
 import com.sportsmanager.domain.session.GameSession;
-import com.sportsmanager.domain.team.IPlayer;
+import com.sportsmanager.domain.team.ICoach;
 import com.sportsmanager.domain.team.ITeam;
 
 /**
  * Advances the in-game calendar by one week.
- * Also recovers injured players by one game per week.
+ * Each coach runs {@link com.sportsmanager.domain.team.ICoach#conductTraining} on their squad between weeks.
  */
 public class WeekController {
 
     public void advanceWeek(GameSession session) {
-        // Recover injured players across all teams
-        if (session.getLeague() != null) {
-            for (ITeam team : session.getLeague().getTeams()) {
-                for (IPlayer player : team.getSquad()) {
-                    if (player.isInjured()) {
-                        player.recoverOneGame();
-                    }
-                }
+        runWeeklyTraining(session);
+        session.setCurrentWeek(session.getCurrentWeek() + 1);
+    }
+
+    private void runWeeklyTraining(GameSession session) {
+        if (session.getLeague() == null) {
+            return;
+        }
+        for (ITeam team : session.getLeague().getTeams()) {
+            for (ICoach coach : team.getCoaches()) {
+                coach.conductTraining(team.getSquad());
             }
         }
-
-        session.setCurrentWeek(session.getCurrentWeek() + 1);
     }
 }

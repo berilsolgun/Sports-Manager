@@ -1,28 +1,19 @@
 package com.sportsmanager.football;
 
+import com.sportsmanager.data.ResourceLines;
 import com.sportsmanager.domain.league.ILeague;
 import com.sportsmanager.domain.simulation.IMatchEngine;
 import com.sportsmanager.domain.sport.SportFactory;
 import com.sportsmanager.domain.team.*;
-import com.sportsmanager.volleyball.VolleyballMatchEngine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class FootballFactory implements SportFactory {
 
-    private static final String[] PLAYER_NAMES = {
-            "Ali Yilmaz", "Mehmet Demir", "Ahmet Kaya", "Mustafa Ozturk",
-            "Hasan Celik", "Huseyin Dogan", "Ibrahim Arslan", "Ismail Koc",
-            "Kemal Sahin", "Murat Yildiz", "Emre Polat", "Burak Aydin",
-            "Serkan Tas", "Tolga Erdogan", "Cem Kurt", "Baris Ozdemir",
-            "Onur Kilic", "Deniz Aksoy", "Can Korkmaz", "Arda Caliskan",
-            "Ozan Tekin", "Kadir Yalcin", "Tuncay Gul", "Volkan Sen",
-            "Selim Aslan"
-    };
-
-    private static final String[] TEAM_NAMES = {
+    private static final String[] FALLBACK_TEAMS = {
             "Galatasaray", "Fenerbahce", "Besiktas", "Trabzonspor",
             "Basaksehir", "Antalyaspor", "Konyaspor", "Sivasspor",
             "Alanyaspor", "Kasimpasa", "Rizespor", "Hatayspor",
@@ -30,11 +21,41 @@ public class FootballFactory implements SportFactory {
             "Pendikspor", "Fatih Karagumruk", "Istanbulspor", "Ankaragücü"
     };
 
+    private static final String[] FALLBACK_PLAYERS = {
+            "Ali Yilmaz", "Mehmet Demir", "Ahmet Kaya", "Mustafa Ozturk",
+            "Hasan Celik", "Huseyin Dogan", "Ibrahim Arslan", "Ismail Koc"
+    };
+
     private static final String[] COACH_SPECIALITIES = {
             "Fitness", "Attacking", "Defending", "Goalkeeping", "Tactics"
     };
 
+    private static final int MATCH_DAY_CAP = new FootballSport().getMaxMatchSquadSize();
+
     private final Random random = new Random();
+
+    private List<String> malePool() {
+        List<String> lines = ResourceLines.load("/com/sportsmanager/data/football/players_male.txt");
+        return lines.isEmpty() ? List.of(FALLBACK_PLAYERS) : lines;
+    }
+
+    private List<String> femalePool() {
+        List<String> lines = ResourceLines.load("/com/sportsmanager/data/football/players_female.txt");
+        return lines.isEmpty() ? List.of(FALLBACK_PLAYERS) : lines;
+    }
+
+    private String randomPlayerName() {
+        List<String> pool = random.nextBoolean() ? malePool() : femalePool();
+        return pool.get(random.nextInt(pool.size()));
+    }
+
+    private List<String> coachNamePool() {
+        List<String> lines = ResourceLines.load("/com/sportsmanager/data/football/coaches.txt");
+        if (!lines.isEmpty()) {
+            return lines;
+        }
+        return List.of("Fatih Terim", "Şenol Güneş", "Okan Buruk", "Abdullah Avcı", "Vincenzo Montella");
+    }
 
     @Override
     public ILeague createLeague(String name, List<ITeam> teams) {
@@ -67,6 +88,14 @@ public class FootballFactory implements SportFactory {
         team.addPlayer(generateRandomPlayer(FootballPosition.ST));
         team.addPlayer(generateRandomPlayer(FootballPosition.CF));
 
+        List<String> coachesPick = new ArrayList<>(coachNamePool());
+        Collections.shuffle(coachesPick, random);
+        int coachCount = Math.min(3, Math.max(2, coachesPick.size() >= 2 ? 2 + random.nextInt(2) : coachesPick.size()));
+        for (int i = 0; i < coachCount && i < coachesPick.size(); i++) {
+            team.getCoaches().add(createCoach(coachesPick.get(i)));
+        }
+
+        team.initializeMatchDaySquad(MATCH_DAY_CAP);
         return team;
     }
 
@@ -87,19 +116,18 @@ public class FootballFactory implements SportFactory {
         return new FootballMatchEngine();
     }
 
-    
     public List<Tactic> generateTactics() {
-    List<Tactic> tactics = new ArrayList<>();
-    tactics.add(new Tactic("4-4-2", 1.00, 1.00));      // Balanced
-    tactics.add(new Tactic("4-3-3", 1.15, 0.90));      // Attacking
-    tactics.add(new Tactic("3-5-2", 1.10, 0.95));      // Slightly attacking
-    tactics.add(new Tactic("4-2-3-1", 1.05, 1.05));    // Modern balanced
-    tactics.add(new Tactic("5-3-2", 0.90, 1.15));      // Defensive
-    return tactics;
-}
+        List<Tactic> tactics = new ArrayList<>();
+        tactics.add(new Tactic("4-4-2", 1.00, 1.00));
+        tactics.add(new Tactic("4-3-3", 1.15, 0.90));
+        tactics.add(new Tactic("3-5-2", 1.10, 0.95));
+        tactics.add(new Tactic("4-2-3-1", 1.05, 1.05));
+        tactics.add(new Tactic("5-3-2", 0.90, 1.15));
+        return tactics;
+    }
 
     public FootballPlayer generateRandomPlayer(FootballPosition pos) {
-        String name = PLAYER_NAMES[random.nextInt(PLAYER_NAMES.length)];
+        String name = randomPlayerName();
         int age = 18 + random.nextInt(18);
         return generatePlayerWithAttributes(name, age, pos);
     }
@@ -132,15 +160,24 @@ public class FootballFactory implements SportFactory {
             case DF -> FootballPosition.CB;
             case MF -> FootballPosition.CM;
             case FW -> FootballPosition.ST;
-            default -> FootballPosition.CM; // for volleyball or/and other sports' cases
+            default -> FootballPosition.CM;
         };
     }
 
+    @Override
     public String[] getTeamNames() {
-        return TEAM_NAMES;
+        List<String> lines = ResourceLines.load("/com/sportsmanager/data/football/teams.txt");
+        if (lines.isEmpty()) {
+            return FALLBACK_TEAMS.clone();
+        }
+        return lines.toArray(new String[0]);
     }
 
     public String[] getPlayerNames() {
-        return PLAYER_NAMES;
+        List<String> m = malePool();
+        List<String> f = femalePool();
+        List<String> merged = new ArrayList<>(m);
+        merged.addAll(f);
+        return merged.toArray(new String[0]);
     }
 }

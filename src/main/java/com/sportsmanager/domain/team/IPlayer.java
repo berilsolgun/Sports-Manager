@@ -11,6 +11,13 @@ public interface IPlayer {
     int getInjuryGamesRemaining();
     void injure(int games);
     void recoverOneGame();
+
+    /** Clears injury timer (used when starting a new season). */
+    void healFully();
+
+    /** Increments age by one year (new season rollover). */
+    void incrementAge();
+
     Map<String,Integer> getAttributes();
 
 }

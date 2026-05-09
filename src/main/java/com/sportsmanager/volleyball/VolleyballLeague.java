@@ -12,18 +12,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class VolleyballLeague extends AbstractLeague {
-    private static final int POINTS_FOR_WIN = 3;
-    private static final int POINTS_FOR_DRAW = 0;
-
-    private final StandingsCalculator standingsCalculator =
-            new StandingsCalculator(POINTS_FOR_WIN, POINTS_FOR_DRAW);
+    private final StandingsCalculator standingsCalculator = new StandingsCalculator();
 
     public VolleyballLeague(String name, List<ITeam> teams) {
         super(name, teams);
-        generateFixtures();
+        rebuildSchedule();
     }
 
-    private void generateFixtures() {
+    /** Clears results and rebuilds fixtures for a new season. */
+    public void resetSeason() {
+        fixtures.clear();
+        rebuildSchedule();
+    }
+
+    private void rebuildSchedule() {
         int teamCount = teams.size();
         if (teamCount < 2) {
             return;

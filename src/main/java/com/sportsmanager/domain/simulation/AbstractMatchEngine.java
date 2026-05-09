@@ -8,12 +8,17 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Shared orchestration for multi-phase matches: clears event log, runs each phase,
- * then delegates to {@link #finishMatch} for sport-specific result packaging.
+ * Shared multi-phase match orchestration with optional stepwise ({@link #beginMatch} /
+ * {@link #playNextPhase} / {@link #endMatch}) playback for live UI.
  */
 public abstract class AbstractMatchEngine implements IMatchEngine {
 
     private final List<MatchEvent> matchEvents = new ArrayList<>();
+
+    protected ITeam ctxHome;
+    protected ITeam ctxAway;
+    protected boolean matchStarted;
+    protected boolean matchFinished;
 
     protected void recordMatchEvent(MatchEvent event) {
         matchEvents.add(event);
@@ -35,20 +40,53 @@ public abstract class AbstractMatchEngine implements IMatchEngine {
     protected abstract int getPhaseCount();
 
     /**
-     * Build the final {@link IMatchResult} after all phases (injuries, events snapshot, etc.).
+     * Build the final {@link IMatchResult} (injuries, events snapshot, etc.).
+     * For football {@code homeScore}/{@code awayScore} are goals; for volleyball they are sets won.
      */
     protected abstract IMatchResult finishMatch(ITeam home, ITeam away, int homeScore, int awayScore);
 
     @Override
-    public  IMatchResult simulate(ITeam home, ITeam away) {
-        clearMatchEvents();
-        int homeScore = 0;
-        int awayScore = 0;
-        for (int phase = 1; phase <= getPhaseCount(); phase++) {
-            PhaseResult pr = simulatePhase(home, away, phase);
-            homeScore += pr.homeScore;
-            awayScore += pr.awayScore;
+    public final void beginMatch(ITeam home, ITeam away) {
+        if (home == null || away == null) {
+            throw new IllegalArgumentException("home and away teams required");
         }
-        return finishMatch(home, away, homeScore, awayScore);
+        ctxHome = home;
+        ctxAway = away;
+        matchStarted = true;
+        matchFinished = false;
+        clearMatchEvents();
+        resetStepwiseState();
+    }
+
+    /** Reset subclass counters before first {@link #playNextPhase}. */
+    protected abstract void resetStepwiseState();
+
+    @Override
+    public abstract boolean isMatchComplete();
+
+    @Override
+    public abstract PhaseResult playNextPhase();
+
+    @Override
+    public final IMatchResult endMatch() {
+        if (!matchStarted) {
+            throw new IllegalStateException("beginMatch first");
+        }
+        if (!matchFinished) {
+            throw new IllegalStateException("match not complete");
+        }
+        return buildFinalResult();
+    }
+
+    /** Called only when {@link #matchFinished} is true. */
+    protected abstract IMatchResult buildFinalResult();
+
+    @Override
+    public final IMatchResult simulate(ITeam home, ITeam away) {
+        beginMatch(home, away);
+        while (!isMatchComplete()) {
+            playNextPhase();
+        }
+        return endMatch();
     }
 }

@@ -300,19 +300,20 @@ class FootballTest {
         assertTrue(gd0 >= gd1);
     }
 
+    /** Starters must belong to the team's match-day squad (factory teams restrict eligibility). */
     private List<IPlayer> buildValidLineup() {
+        List<IPlayer> squad = new ArrayList<>(team.getSquad());
+        IPlayer gk = squad.stream()
+                .filter(p -> p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK)
+                .findFirst()
+                .orElseThrow();
+        List<IPlayer> others = squad.stream()
+                .filter(p -> !(p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK))
+                .limit(10)
+                .toList();
         List<IPlayer> lineup = new ArrayList<>();
-        lineup.add(new FootballPlayer("GK1", 25, FootballPosition.GK, 50, 50, 50, 50, 50, 50, 80));
-        lineup.add(new FootballPlayer("CB1", 25, FootballPosition.CB, 50, 50, 50, 50, 70, 60, 30));
-        lineup.add(new FootballPlayer("CB2", 25, FootballPosition.CB, 50, 50, 50, 50, 70, 60, 30));
-        lineup.add(new FootballPlayer("LB1", 25, FootballPosition.LB, 70, 50, 60, 60, 60, 60, 30));
-        lineup.add(new FootballPlayer("RB1", 25, FootballPosition.RB, 70, 50, 60, 60, 60, 60, 30));
-        lineup.add(new FootballPlayer("CM1", 25, FootballPosition.CM, 60, 60, 70, 65, 60, 60, 30));
-        lineup.add(new FootballPlayer("CM2", 25, FootballPosition.CM, 60, 60, 70, 65, 60, 60, 30));
-        lineup.add(new FootballPlayer("CM3", 25, FootballPosition.CDM, 55, 50, 65, 55, 70, 65, 30));
-        lineup.add(new FootballPlayer("LW1", 25, FootballPosition.LW, 85, 70, 65, 80, 40, 55, 30));
-        lineup.add(new FootballPlayer("RW1", 25, FootballPosition.RW, 85, 70, 65, 80, 40, 55, 30));
-        lineup.add(new FootballPlayer("ST1", 25, FootballPosition.ST, 75, 85, 60, 70, 35, 65, 30));
+        lineup.add(gk);
+        lineup.addAll(others);
         return lineup;
     }
 

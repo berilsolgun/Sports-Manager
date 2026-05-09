@@ -21,6 +21,11 @@ public class FootballSport implements Sport {
     }
 
     @Override
+    public int getStartingLineupSize() {
+        return 11;
+    }
+
+    @Override
     public int getMatchPhaseCount() {
         return 2;
     }

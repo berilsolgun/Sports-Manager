@@ -9,6 +9,7 @@ public class MatchEvent {
     private final MatchEventType type;
     private final String description;
     private final ITeam team;
+    /** May be null when deserialized or for team-level events without a single actor. */
     private final IPlayer player;
 
     public MatchEvent(int minute, int phase, MatchEventType type, String description, ITeam team, IPlayer player) {

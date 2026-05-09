@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StandingsCalculatorTest {
 
-    private final StandingsCalculator calculator = new StandingsCalculator(3, 1);
+    private final StandingsCalculator calculator = new StandingsCalculator();
 
     private static StandingEntry entry(String name, int points, int gf, int ga) {
         StandingEntry e = new StandingEntry();

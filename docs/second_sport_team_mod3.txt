@@ -1,0 +1,7 @@
+Second sport assignment (example rule used for grading spreadsheets):
+
+- Sum the digits of your student ID.
+- If (digit sum mod 3) == 1, pick Volleyball as the second sport implementation focus for your team module.
+- Otherwise use another mapping provided by your instructor.
+
+This file is a lightweight reference only; the authoritative rule is always the course PDF.

@@ -1,0 +1,21 @@
+# Süper Lig style pool (one name per line)
+Galatasaray
+Fenerbahce
+Besiktas
+Trabzonspor
+Basaksehir
+Antalyaspor
+Konyaspor
+Sivasspor
+Alanyaspor
+Kasimpasa
+Rizespor
+Hatayspor
+Kayserispor
+Samsunspor
+Adana Demirspor
+Gaziantep FK
+Pendikspor
+Fatih Karagumruk
+Istanbulspor
+Ankaragucu

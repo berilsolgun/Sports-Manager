@@ -20,11 +20,6 @@ class FrameworkTest {
         public TestPlayer(String n, int a, Position p) { super(n, a, p); }
         @Override public int getOverallRating() { return 75; }
 
-        @Override
-        public int getInjuryGamesRemaining() {
-            return this.injuryGamesRemaining;
-        }
-
         @Override public Map<String, Integer> getAttributes() { return null; }
     }
 
@@ -37,7 +32,6 @@ class FrameworkTest {
         }
 
         @Override public int getTeamRating() { return 100; }
-        @Override public List<ICoach> getCoaches() { return new ArrayList<>(); }
     }
 
     class TestLeague extends AbstractLeague {
