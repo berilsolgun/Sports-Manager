@@ -41,22 +41,10 @@ public class MainApp extends Application {
     }
 
     private void onSportChosen(Sport sport) {
-        SportFactory factory = sport.createFactory();
-        IMatchEngine engine = factory.createMatchEngine();
-        List<ITeam> teams = createTeams(factory, TEAM_COUNT);
-        ILeague league = factory.createLeague(sport.getName() + " League", teams);
-
-        GameSession session = new GameSession();
-        session.setSport(sport);
-        session.setCurrentWeek(1);
-        session.setSeason(2026);
-        session.setLeague(league);
-        session.setPlayerTeam(teams.get(0));
-
-        DashboardScreen dashboard = new DashboardScreen(primaryStage, session, engine);
-        primaryStage.setScene(dashboard.createScene());
-    }
-
+    com.sportsmanager.ui.NewOrLoadScreen newOrLoad =
+            new com.sportsmanager.ui.NewOrLoadScreen(primaryStage, sport);
+    primaryStage.setScene(newOrLoad.createScene());
+}
     private SportRegistry buildRegistry() {
         SportRegistry reg = new SportRegistry();
         reg.register(new FootballSport());

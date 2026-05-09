@@ -28,7 +28,8 @@ public class SquadScreen {
     public Scene createScene() {
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: #16213e;");
+        String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
+root.setStyle("-fx-background-color: " + bgColor + ";");
 
         Label title = new Label(session.getPlayerTeam().getName() + " - Squad");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #e94560;");

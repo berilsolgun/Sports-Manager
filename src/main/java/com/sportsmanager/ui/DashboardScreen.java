@@ -1,5 +1,7 @@
 package com.sportsmanager.ui;
-
+import com.sportsmanager.domain.session.GameRepository;
+import com.sportsmanager.domain.session.JsonGameRepository;
+import javafx.stage.FileChooser;
 import com.sportsmanager.application.LeagueController;
 import com.sportsmanager.application.MatchController;
 import com.sportsmanager.application.WeekController;
@@ -16,13 +18,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.List;
 
 public class DashboardScreen {
 
     private final Stage stage;
-    private final GameSession session;
-    private final IMatchEngine engine;
+    private  GameSession session;
+    private  IMatchEngine engine;
     private final MatchController matchController = new MatchController();
     private final WeekController weekController = new WeekController();
     private final LeagueController leagueController = new LeagueController();
@@ -41,7 +44,8 @@ public class DashboardScreen {
     public Scene createScene() {
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: #16213e;");
+        String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
+root.setStyle("-fx-background-color: " + bgColor + ";");
 
         String sportName = session.getSport().getName();
 
@@ -72,16 +76,40 @@ public class DashboardScreen {
     }
 
     private HBox createButtonBar() {
-        Button simulateBtn = styledButton("Simulate Week");
-        simulateBtn.setOnAction(e -> onSimulateWeek());
+    Button simulateBtn = styledButton("Simulate Week");
+    simulateBtn.setOnAction(e -> onSimulateWeek());
 
-        Button squadBtn = styledButton("View Squad");
-        squadBtn.setOnAction(e -> showSquadScreen());
+    Button squadBtn = styledButton("View Squad");
+    squadBtn.setOnAction(e -> showSquadScreen());
 
-        HBox bar = new HBox(12, simulateBtn, squadBtn);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        return bar;
+    Button saveBtn = styledButton("Save Game");
+    saveBtn.setOnAction(e -> onSaveGame());
+
+    
+
+    HBox bar = new HBox(12, simulateBtn, squadBtn, saveBtn);
+    bar.setAlignment(Pos.CENTER_LEFT);
+    return bar;
+}
+
+private void onSaveGame() {
+    FileChooser chooser = new FileChooser();
+    chooser.setTitle("Save Game");
+    chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Save Files (*.json)", "*.json"));
+    chooser.setInitialFileName("savegame.json");
+    File file = chooser.showSaveDialog(stage);
+    if (file != null) {
+        try {
+            GameRepository repo = new JsonGameRepository(file.getAbsolutePath());
+            repo.save(session);
+            logArea.appendText("Game saved to " + file.getName() + "\n");
+        } catch (Exception ex) {
+            logArea.appendText("Save failed: " + ex.getMessage() + "\n");
+        }
     }
+}
+
+
 
     private void onSimulateWeek() {
         if (leagueController.isSeasonComplete(session)) {
