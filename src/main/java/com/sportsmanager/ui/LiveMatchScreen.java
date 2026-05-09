@@ -26,9 +26,6 @@ import javafx.util.StringConverter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Stepwise match playback for the player's fixture with optional tactic change and substitutions between phases.
- */
 public class LiveMatchScreen {
 
     private final Stage stage;
@@ -98,6 +95,20 @@ public class LiveMatchScreen {
 
         Button nextBtn = new Button("Play next phase");
         nextBtn.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; -fx-padding: 10 22;");
+
+        Button simEndBtn = new Button("Sim to end");
+        simEndBtn.setStyle("-fx-background-color: #1f7a4a; -fx-text-fill: white; -fx-padding: 10 22;");
+
+        Button continueBtn = new Button("Continue");
+        continueBtn.setStyle("-fx-background-color: #e94560; -fx-text-fill: white; -fx-padding: 10 22; -fx-font-weight: bold;");
+        continueBtn.setVisible(false);
+        continueBtn.setManaged(false);
+        continueBtn.setOnAction(e -> {
+            if (matchRecorded) {
+                onFinished.run();
+            }
+        });
+
         nextBtn.setOnAction(e -> {
             if (matchRecorded) {
                 return;
@@ -108,7 +119,7 @@ public class LiveMatchScreen {
                 log.appendText("Kickoff / first set.\n");
             }
             if (engine.isMatchComplete()) {
-                finalizeMatch(log, score, nextBtn);
+                finalizeMatch(log, score, nextBtn, simEndBtn, continueBtn);
                 return;
             }
             PhaseResult pr = engine.playNextPhase();
@@ -121,12 +132,37 @@ public class LiveMatchScreen {
             refreshSubCombos(player, outSub, inSub);
 
             if (engine.isMatchComplete()) {
-                finalizeMatch(log, score, nextBtn);
+                finalizeMatch(log, score, nextBtn, simEndBtn, continueBtn);
             }
         });
 
-        root.getChildren().addAll(title, score, tacticBox, subRow, log, nextBtn);
-        return new Scene(root, 720, 620);
+        simEndBtn.setOnAction(e -> {
+            if (matchRecorded) {
+                return;
+            }
+            if (!begun) {
+                engine.beginMatch(home, away);
+                begun = true;
+                log.appendText("Kickoff / first set.\n");
+            }
+            while (!engine.isMatchComplete()) {
+                PhaseResult pr = engine.playNextPhase();
+                cumulativeHome += pr.homeScore;
+                cumulativeAway += pr.awayScore;
+                log.appendText(String.format("Phase complete: +%d / +%d (running %d - %d)\n",
+                        pr.homeScore, pr.awayScore, cumulativeHome, cumulativeAway));
+                appendPhaseEvents(pr, log);
+            }
+            score.setText(formatScoreLabel(home, away, cumulativeHome, cumulativeAway));
+            refreshSubCombos(player, outSub, inSub);
+            finalizeMatch(log, score, nextBtn, simEndBtn, continueBtn);
+        });
+
+        HBox actionRow = new HBox(10, nextBtn, simEndBtn, continueBtn);
+        actionRow.setAlignment(Pos.CENTER);
+
+        root.getChildren().addAll(title, score, tacticBox, subRow, log, actionRow);
+        return new Scene(root, 720, 640);
     }
 
 
@@ -178,6 +214,7 @@ public class LiveMatchScreen {
         }
         return player.getName() + " - " + player.getPosition() + " (" + player.getOverallRating() + ")";
     }
+
     private String formatScoreLabel(ITeam home, ITeam away, int h, int a) {
         boolean vb = session.getSport().getName().equalsIgnoreCase("Volleyball");
         String u = vb ? "sets" : "goals";
@@ -194,7 +231,7 @@ public class LiveMatchScreen {
         }
     }
 
-    private void finalizeMatch(TextArea log, Label score, Button nextBtn) {
+    private void finalizeMatch(TextArea log, Label score, Button nextBtn, Button simEndBtn, Button continueBtn) {
         if (matchRecorded) {
             return;
         }
@@ -203,10 +240,13 @@ public class LiveMatchScreen {
             session.getLeague().recordResult(fixture, res);
             matchRecorded = true;
             nextBtn.setDisable(true);
+            simEndBtn.setDisable(true);
             log.appendText(String.format("Full time: %d - %d\n", res.getHomeScore(), res.getAwayScore()));
-            score.setText(formatScoreLabel(fixture.getHomeTeam(), fixture.getAwayTeam(),
+            score.setText("FINAL  " + formatScoreLabel(fixture.getHomeTeam(), fixture.getAwayTeam(),
                     res.getHomeScore(), res.getAwayScore()));
-            onFinished.run();
+            score.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #e94560;");
+            continueBtn.setVisible(true);
+            continueBtn.setManaged(true);
         } catch (IllegalStateException ex) {
             alert(ex.getMessage());
         }
@@ -247,4 +287,3 @@ public class LiveMatchScreen {
         a.showAndWait();
     }
 }
-

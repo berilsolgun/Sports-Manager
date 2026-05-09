@@ -1,5 +1,6 @@
 package com.sportsmanager.ui;
 
+import com.sportsmanager.MainApp;
 import com.sportsmanager.application.LeagueController;
 import com.sportsmanager.application.MatchController;
 import com.sportsmanager.application.WeekController;
@@ -8,16 +9,21 @@ import com.sportsmanager.domain.session.GameRepository;
 import com.sportsmanager.domain.session.GameSession;
 import com.sportsmanager.domain.session.JsonGameRepository;
 import com.sportsmanager.domain.simulation.IMatchEngine;
+import com.sportsmanager.domain.team.IPlayer;
+import com.sportsmanager.domain.team.Tactic;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -39,6 +45,8 @@ public class DashboardScreen {
     private Scene scene;
     private Label weekLabel;
     private Label teamLabel;
+    private Label tacticLabel;
+    private Label lineupLabel;
     private ImageView logoView;
     private TableView<StandingRow> standingsTable;
     private TextArea logArea;
@@ -62,7 +70,7 @@ public class DashboardScreen {
     }
 
     private void buildScene() {
-        VBox root = new VBox(15);
+        VBox root = new VBox(12);
         root.setPadding(new Insets(20));
         String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
         root.setStyle("-fx-background-color: " + bgColor + ";");
@@ -83,10 +91,17 @@ public class DashboardScreen {
         weekLabel = new Label();
         weekLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #a8a8a8;");
 
+        tacticLabel = new Label();
+        tacticLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #a8a8a8;");
+
+        lineupLabel = new Label();
+        lineupLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #a8a8a8;");
+
         HBox top = new HBox(12, logoView, title);
         top.setAlignment(Pos.CENTER_LEFT);
 
-        HBox buttons = createButtonBar();
+        FlowPane primaryButtons = createPrimaryButtonBar();
+        FlowPane secondaryButtons = createSecondaryButtonBar();
 
         standingsTable = createStandingsTable(sportName);
         VBox.setVgrow(standingsTable, Priority.ALWAYS);
@@ -97,21 +112,50 @@ public class DashboardScreen {
         logArea.setStyle("-fx-control-inner-background: #1a1a2e; -fx-text-fill: #eaeaea; -fx-font-family: monospace;");
         logArea.setPromptText("Match log will appear here...");
 
-        root.getChildren().addAll(top, teamLabel, weekLabel, buttons, standingsTable, logArea);
-        scene = new Scene(root, 780, 680);
+        root.getChildren().addAll(top, teamLabel, weekLabel, tacticLabel, lineupLabel,
+                primaryButtons, secondaryButtons, standingsTable, logArea);
+        scene = new Scene(root, 820, 740);
     }
 
     private void refreshUiState() {
         teamLabel.setText("Team: " + session.getPlayerTeam().getName());
         weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
+        Tactic tac = session.getPlayerTeam().getCurrentTactic();
+        tacticLabel.setText("Tactic: " + (tac == null ? "(not set)" : tac.getName()));
+        lineupLabel.setText("Lineup: " + (LineupAutoPick.isLineupReady(session.getPlayerTeam(), session)
+                ? "Ready" : "Needs setup"));
         var img = UiLogo.loadTeamLogo(session.getSport(), session.getPlayerTeam().getLogo());
         logoView.setImage(img);
         refreshStandings();
     }
 
-    private HBox createButtonBar() {
-        Button simulateBtn = styledButton("Simulate Week");
-        simulateBtn.setOnAction(e -> onSimulateWeek());
+    private FlowPane createPrimaryButtonBar() {
+        Button playBtn = styledButton("Play Match");
+        playBtn.setOnAction(e -> onPlayMatch());
+
+        Button quickSimBtn = styledButton("Quick Sim Week");
+        quickSimBtn.setOnAction(e -> onQuickSimWeek());
+
+        FlowPane bar = new FlowPane(10, 10, playBtn, quickSimBtn);
+        return bar;
+    }
+
+    private FlowPane createSecondaryButtonBar() {
+        Button tacticBtn = styledButton("Change Tactic");
+        tacticBtn.setOnAction(e -> stage.setScene(new TacticSelectionScreen(stage, session,
+                t -> {
+                    logArea.appendText("Tactic set: " + t.getName() + "\n");
+                    stage.setScene(createScene());
+                },
+                () -> stage.setScene(createScene())).createScene()));
+
+        Button lineupBtn = styledButton("Change Lineup");
+        lineupBtn.setOnAction(e -> stage.setScene(new LineupScreen(stage, session,
+                () -> {
+                    logArea.appendText("Lineup updated.\n");
+                    stage.setScene(createScene());
+                },
+                () -> stage.setScene(createScene())).createScene()));
 
         Button squadBtn = styledButton("View Squad");
         squadBtn.setOnAction(e -> showSquadScreen());
@@ -120,12 +164,30 @@ public class DashboardScreen {
         scheduleBtn.setOnAction(e -> stage.setScene(
                 new ScheduleScreen(stage, session, () -> stage.setScene(createScene())).createScene()));
 
+        Button helpBtn = styledButton("Help");
+        helpBtn.setOnAction(e -> stage.setScene(
+                new HelpScreen(stage, session, () -> stage.setScene(createScene())).createScene()));
+
         Button saveBtn = styledButton("Save Game");
         saveBtn.setOnAction(e -> onSaveGame());
 
-        HBox bar = new HBox(12, simulateBtn, squadBtn, scheduleBtn, saveBtn);
-        bar.setAlignment(Pos.CENTER_LEFT);
+        Button menuBtn = styledButton("Main Menu");
+        menuBtn.setOnAction(e -> onReturnToMainMenu());
+
+        FlowPane bar = new FlowPane(10, 10, tacticBtn, lineupBtn, squadBtn, scheduleBtn, helpBtn, saveBtn, menuBtn);
         return bar;
+    }
+
+    private void onReturnToMainMenu() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Return to main menu? Any unsaved progress will be lost.",
+                ButtonType.YES, ButtonType.NO);
+        confirm.setHeaderText(null);
+        confirm.showAndWait().ifPresent(choice -> {
+            if (choice == ButtonType.YES) {
+                MainApp.returnToSportSelection();
+            }
+        });
     }
 
     private void onSaveGame() {
@@ -145,17 +207,55 @@ public class DashboardScreen {
         }
     }
 
-    private void onSimulateWeek() {
+    private void onPlayMatch() {
         if (leagueController.isSeasonComplete(session)) {
             stage.setScene(new SeasonEndScreen(stage, session, engine).createScene());
             return;
         }
 
-        TacticSelectionScreen tacticScreen = new TacticSelectionScreen(stage, session, chosenTactic -> {
-            logArea.appendText("Tactic chosen: " + chosenTactic.getName() + "\n");
-            stage.setScene(new LineupScreen(stage, session, this::runWeekAfterLineup).createScene());
-        });
-        stage.setScene(tacticScreen.createScene());
+        ensureTactic();
+        if (!LineupAutoPick.isLineupReady(session.getPlayerTeam(), session)) {
+            stage.setScene(new LineupScreen(stage, session, this::runWeekAfterLineup,
+                    () -> stage.setScene(createScene())).createScene());
+            return;
+        }
+        runWeekAfterLineup();
+    }
+
+    private void onQuickSimWeek() {
+        if (leagueController.isSeasonComplete(session)) {
+            stage.setScene(new SeasonEndScreen(stage, session, engine).createScene());
+            return;
+        }
+        ensureTactic();
+        ensureLineupAutoPicked();
+
+        int week = session.getCurrentWeek();
+        matchController.playCurrentWeek(session, engine, true);
+        finishWeekAfterMatches(week);
+    }
+
+    private void ensureTactic() {
+        if (session.getPlayerTeam().getCurrentTactic() == null) {
+            List<Tactic> tactics = session.getSport().createFactory().generateTactics();
+            if (!tactics.isEmpty()) {
+                session.getPlayerTeam().setTactic(tactics.get(0));
+                logArea.appendText("Tactic auto-set: " + tactics.get(0).getName() + "\n");
+            }
+        }
+    }
+
+    private void ensureLineupAutoPicked() {
+        if (LineupAutoPick.isLineupReady(session.getPlayerTeam(), session)) {
+            return;
+        }
+        List<IPlayer> picks = LineupAutoPick.pickBestLineup(session.getPlayerTeam(), session);
+        try {
+            session.getPlayerTeam().setStartingEleven(picks);
+            logArea.appendText("Lineup auto-picked.\n");
+        } catch (IllegalArgumentException ex) {
+            logArea.appendText("Auto-pick failed: " + ex.getMessage() + "\n");
+        }
     }
 
     private void runWeekAfterLineup() {

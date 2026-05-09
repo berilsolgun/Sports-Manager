@@ -11,10 +11,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,11 +26,17 @@ public class LineupScreen {
     private final Stage stage;
     private final GameSession session;
     private final Runnable onContinue;
+    private final Runnable onCancel;
 
     public LineupScreen(Stage stage, GameSession session, Runnable onContinue) {
+        this(stage, session, onContinue, null);
+    }
+
+    public LineupScreen(Stage stage, GameSession session, Runnable onContinue, Runnable onCancel) {
         this.stage = stage;
         this.session = session;
         this.onContinue = onContinue;
+        this.onCancel = onCancel;
     }
 
     public Scene createScene() {
@@ -60,11 +68,16 @@ public class LineupScreen {
         Label status = new Label("Selected: 0 / " + need);
         status.setStyle("-fx-text-fill: #a8a8a8;");
 
+        Set<IPlayer> initialSelection = computeInitialSelection(team, eligible, need);
+
         for (IPlayer player : eligible) {
             CheckBox box = new CheckBox(player.getName() + " - " + player.getPosition()
                     + " (" + player.getOverallRating() + ")");
             box.setUserData(player);
             box.setStyle("-fx-text-fill: #eaeaea; -fx-font-size: 13px;");
+            if (initialSelection.contains(player)) {
+                box.setSelected(true);
+            }
             box.selectedProperty().addListener((obs, oldValue, selected) -> {
                 int selectedCount = selectedCount(boxes);
                 if (selected && selectedCount > need) {
@@ -77,14 +90,23 @@ public class LineupScreen {
             boxes.add(box);
             playerList.getChildren().add(box);
         }
+        status.setText("Selected: " + selectedCount(boxes) + " / " + need);
 
         ScrollPane scroll = new ScrollPane(playerList);
         scroll.setFitToWidth(true);
         scroll.setPrefHeight(340);
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
-        Button confirm = new Button("Confirm");
-        confirm.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; -fx-padding: 10 28;");
+        Button autoPick = styledButton("Auto-pick best", "#0f3460");
+        autoPick.setOnAction(e -> {
+            List<IPlayer> picks = LineupAutoPick.pickBestLineup(team, session);
+            Set<IPlayer> set = new HashSet<>(picks);
+            for (CheckBox b : boxes) {
+                b.setSelected(set.contains((IPlayer) b.getUserData()));
+            }
+        });
+
+        Button confirm = styledButton("Confirm", "#0f3460");
         confirm.setOnAction(e -> {
             List<IPlayer> picked = selectedPlayers(boxes);
             if (picked.size() != need) {
@@ -104,8 +126,40 @@ public class LineupScreen {
             }
         });
 
-        root.getChildren().addAll(title, help, scroll, status, confirm);
-        return new Scene(root, 640, 560);
+        HBox actionRow = new HBox(10, autoPick, confirm);
+        actionRow.setAlignment(Pos.CENTER);
+
+        if (onCancel != null) {
+            Button cancel = styledButton("Cancel", "#444");
+            cancel.setOnAction(e -> onCancel.run());
+            actionRow.getChildren().add(cancel);
+        }
+
+        root.getChildren().addAll(title, help, scroll, status, actionRow);
+        return new Scene(root, 640, 580);
+    }
+
+    private Set<IPlayer> computeInitialSelection(ITeam team, List<IPlayer> eligible, int need) {
+        Set<IPlayer> eligibleSet = new HashSet<>(eligible);
+        List<IPlayer> existing = team.getStartingEleven();
+        if (existing != null && !existing.isEmpty()) {
+            Set<IPlayer> current = new LinkedHashSet<>();
+            for (IPlayer p : existing) {
+                if (eligibleSet.contains(p)) {
+                    current.add(p);
+                }
+            }
+            if (current.size() == need) {
+                return current;
+            }
+        }
+        Set<IPlayer> set = new LinkedHashSet<>();
+        for (IPlayer p : LineupAutoPick.pickBestLineup(team, session)) {
+            if (eligibleSet.contains(p)) {
+                set.add(p);
+            }
+        }
+        return set;
     }
 
     private int selectedCount(List<CheckBox> boxes) {
@@ -120,6 +174,13 @@ public class LineupScreen {
             }
         }
         return selected;
+    }
+
+    private Button styledButton(String text, String color) {
+        Button b = new Button(text);
+        b.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-padding: 10 22; "
+                + "-fx-background-radius: 6; -fx-cursor: hand;");
+        return b;
     }
 
     private void alert(String msg) {

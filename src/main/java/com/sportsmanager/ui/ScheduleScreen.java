@@ -10,13 +10,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.Comparator;
 import java.util.List;
 
-/** Past results and upcoming fixtures by week. */
 public class ScheduleScreen {
 
     private final Stage stage;
@@ -45,63 +45,99 @@ public class ScheduleScreen {
                 .toList();
 
         TabPane tabs = new TabPane();
+        tabs.setStyle("-fx-background-color: #1a1a2e;");
+
         Tab past = new Tab("Results");
         past.setClosable(false);
-        past.setContent(scrollText(formatPlayed(fixtures)));
+        past.setContent(buildPlayedView(fixtures));
 
         Tab upcoming = new Tab("Upcoming");
         upcoming.setClosable(false);
-        upcoming.setContent(scrollText(formatUpcoming(fixtures)));
+        upcoming.setContent(buildUpcomingView(fixtures));
 
         tabs.getTabs().addAll(past, upcoming);
 
         Button back = new Button("Back");
-        back.setStyle("-fx-background-color: #444; -fx-text-fill: white;");
+        back.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; "
+                + "-fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 8 25;");
         back.setOnAction(e -> onBack.run());
 
-        VBox.setVgrow(tabs, javafx.scene.layout.Priority.ALWAYS);
+        VBox.setVgrow(tabs, Priority.ALWAYS);
         root.getChildren().addAll(title, tabs, back);
-        return new Scene(root, 700, 560);
+        return new Scene(root, 720, 600);
     }
 
-    private ScrollPane scrollText(String body) {
-        Label lbl = new Label(body);
-        lbl.setWrapText(true);
-        lbl.setStyle("-fx-text-fill: #eaeaea; -fx-font-family: monospace;");
-        ScrollPane sp = new ScrollPane(lbl);
-        sp.setFitToWidth(true);
-        return sp;
-    }
+    private ScrollPane buildPlayedView(List<IFixture> fixtures) {
+        VBox content = new VBox(6);
+        content.setPadding(new Insets(14));
+        content.setStyle("-fx-background-color: #1a1a2e;");
 
-    private String formatPlayed(List<IFixture> fixtures) {
-        StringBuilder sb = new StringBuilder();
+        int currentWeek = -1;
+        boolean any = false;
         for (IFixture f : fixtures) {
             if (!f.isPlayed()) {
                 continue;
             }
-            f.getResult().ifPresent(r -> sb.append(String.format("W%d  %s %d-%d %s  (pts %d-%d)%n",
-                    f.getWeek(),
-                    f.getHomeTeam().getName(), r.getHomeScore(), r.getAwayScore(), f.getAwayTeam().getName(),
-                    r.getHomePoints(), r.getAwayPoints())));
+            any = true;
+            if (f.getWeek() != currentWeek) {
+                currentWeek = f.getWeek();
+                content.getChildren().add(weekHeader("Week " + currentWeek));
+            }
+            f.getResult().ifPresent(r -> {
+                String line = String.format("  %s  %d - %d  %s    (pts %d-%d)",
+                        f.getHomeTeam().getName(), r.getHomeScore(), r.getAwayScore(),
+                        f.getAwayTeam().getName(), r.getHomePoints(), r.getAwayPoints());
+                content.getChildren().add(rowLabel(line));
+            });
         }
-        if (sb.length() == 0) {
-            return "No results yet.";
+        if (!any) {
+            content.getChildren().add(rowLabel("No results yet — play some matches first."));
         }
-        return sb.toString();
+        return wrapInScroll(content);
     }
 
-    private String formatUpcoming(List<IFixture> fixtures) {
-        StringBuilder sb = new StringBuilder();
+    private ScrollPane buildUpcomingView(List<IFixture> fixtures) {
+        VBox content = new VBox(6);
+        content.setPadding(new Insets(14));
+        content.setStyle("-fx-background-color: #1a1a2e;");
+
+        int currentWeek = -1;
+        boolean any = false;
         for (IFixture f : fixtures) {
             if (f.isPlayed()) {
                 continue;
             }
-            sb.append(String.format("W%d  %s vs %s%n",
-                    f.getWeek(), f.getHomeTeam().getName(), f.getAwayTeam().getName()));
+            any = true;
+            if (f.getWeek() != currentWeek) {
+                currentWeek = f.getWeek();
+                content.getChildren().add(weekHeader("Week " + currentWeek));
+            }
+            String line = String.format("  %s  vs  %s",
+                    f.getHomeTeam().getName(), f.getAwayTeam().getName());
+            content.getChildren().add(rowLabel(line));
         }
-        if (sb.length() == 0) {
-            return "Season complete — no upcoming fixtures.";
+        if (!any) {
+            content.getChildren().add(rowLabel("Season complete — no upcoming fixtures."));
         }
-        return sb.toString();
+        return wrapInScroll(content);
+    }
+
+    private Label weekHeader(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-text-fill: #e94560; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 0 2 0;");
+        return l;
+    }
+
+    private Label rowLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-text-fill: #eaeaea; -fx-font-family: monospace; -fx-font-size: 13px;");
+        return l;
+    }
+
+    private ScrollPane wrapInScroll(VBox content) {
+        ScrollPane sp = new ScrollPane(content);
+        sp.setFitToWidth(true);
+        sp.setStyle("-fx-background: #1a1a2e; -fx-background-color: #1a1a2e;");
+        return sp;
     }
 }

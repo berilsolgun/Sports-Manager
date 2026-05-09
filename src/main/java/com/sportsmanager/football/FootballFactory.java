@@ -39,13 +39,8 @@ public class FootballFactory implements SportFactory {
         return lines.isEmpty() ? List.of(FALLBACK_PLAYERS) : lines;
     }
 
-    private List<String> femalePool() {
-        List<String> lines = ResourceLines.load("/com/sportsmanager/data/football/players_female.txt");
-        return lines.isEmpty() ? List.of(FALLBACK_PLAYERS) : lines;
-    }
-
     private String randomPlayerName() {
-        List<String> pool = random.nextBoolean() ? malePool() : femalePool();
+        List<String> pool = malePool();
         return pool.get(random.nextInt(pool.size()));
     }
 
@@ -174,10 +169,6 @@ public class FootballFactory implements SportFactory {
     }
 
     public String[] getPlayerNames() {
-        List<String> m = malePool();
-        List<String> f = femalePool();
-        List<String> merged = new ArrayList<>(m);
-        merged.addAll(f);
-        return merged.toArray(new String[0]);
+        return malePool().toArray(new String[0]);
     }
 }
