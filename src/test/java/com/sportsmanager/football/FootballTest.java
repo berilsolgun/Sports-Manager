@@ -301,6 +301,96 @@ class FootballTest {
                 "Team A should be top because it won the Head-to-Head match.");
     }
 
+    @Test
+    void substituteSwapsOnPitchPlayerWithBenchPlayer() {
+        List<IPlayer> lineup = buildValidLineup();
+        team.setStartingEleven(lineup);
+        IPlayer out = nonGkStarter(lineup);
+        IPlayer in = nonGkReserve(lineup);
+
+        team.substitute(out, in);
+
+        assertFalse(team.getStartingEleven().contains(out));
+        assertTrue(team.getStartingEleven().contains(in));
+        assertEquals(11, team.getStartingEleven().size());
+    }
+
+    @Test
+    void substituteRejectsBringingInInjuredPlayer() {
+        List<IPlayer> lineup = buildValidLineup();
+        team.setStartingEleven(lineup);
+        IPlayer out = nonGkStarter(lineup);
+        IPlayer in = nonGkReserve(lineup);
+        in.injure(2);
+
+        assertThrows(IllegalArgumentException.class, () -> team.substitute(out, in));
+    }
+
+    @Test
+    void substituteRejectsWhenOutPlayerNotOnPitch() {
+        List<IPlayer> lineup = buildValidLineup();
+        team.setStartingEleven(lineup);
+        IPlayer benchA = nonGkReserve(lineup);
+        IPlayer benchB = anotherNonGkReserve(lineup, benchA);
+
+        assertThrows(IllegalArgumentException.class, () -> team.substitute(benchA, benchB));
+    }
+
+    @Test
+    void substituteRejectsWhenInPlayerAlreadyOnPitch() {
+        List<IPlayer> lineup = buildValidLineup();
+        team.setStartingEleven(lineup);
+        IPlayer out = nonGkStarter(lineup);
+        IPlayer alreadyOnPitch = lineup.get(2);
+
+        assertThrows(IllegalArgumentException.class, () -> team.substitute(out, alreadyOnPitch));
+    }
+
+    @Test
+    void substituteRejectsWhenInPlayerNotInMatchDaySquad() {
+        List<IPlayer> lineup = buildValidLineup();
+        team.setStartingEleven(lineup);
+        IPlayer out = nonGkStarter(lineup);
+        FootballPlayer outsider = new FootballPlayer("Outsider", 25, FootballPosition.CM,
+                70, 70, 70, 70, 70, 70, 30);
+
+        assertThrows(IllegalArgumentException.class, () -> team.substitute(out, outsider));
+    }
+
+    @Test
+    void substituteRejectsWhenStartingElevenEmpty() {
+        FootballTeam fresh = new FootballTeam("Fresh", "f.png");
+        FootballPlayer a = new FootballPlayer("A", 25, FootballPosition.CM, 70, 70, 70, 70, 70, 70, 30);
+        FootballPlayer b = new FootballPlayer("B", 25, FootballPosition.CM, 70, 70, 70, 70, 70, 70, 30);
+        fresh.addPlayer(a);
+        fresh.addPlayer(b);
+
+        assertThrows(IllegalStateException.class, () -> fresh.substitute(a, b));
+    }
+
+    private IPlayer nonGkStarter(List<IPlayer> lineup) {
+        return lineup.stream()
+                .filter(p -> !(p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private IPlayer nonGkReserve(List<IPlayer> lineup) {
+        return team.getSquad().stream()
+                .filter(p -> !lineup.contains(p))
+                .filter(p -> !(p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private IPlayer anotherNonGkReserve(List<IPlayer> lineup, IPlayer except) {
+        return team.getSquad().stream()
+                .filter(p -> !lineup.contains(p) && p != except)
+                .filter(p -> !(p instanceof FootballPlayer fp && fp.getFootballPosition() == FootballPosition.GK))
+                .findFirst()
+                .orElseThrow();
+    }
+
     /** Starters must belong to the team's match-day squad (factory teams restrict eligibility). */
     private List<IPlayer> buildValidLineup() {
         List<IPlayer> squad = new ArrayList<>(team.getSquad());
