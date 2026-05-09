@@ -9,9 +9,7 @@ import com.sportsmanager.domain.team.IPlayer;
 import com.sportsmanager.domain.team.ITeam;
 import com.sportsmanager.domain.team.Tactic;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Runs match simulation for fixtures in a given week and records results on the league.
@@ -95,14 +93,27 @@ public class MatchController {
         session.getLeague().recordResult(fixture, result);
     }
 
-    /** One injury recovery tick per injured player after all fixtures for this gameweek are recorded. */
-    public void applyGameweekInjuryRecovery(GameSession session) {
+    /** *
+     * Only ticks recovery for players whose team actually played a fixture this week.
+     */
+    public void applyGameWeekInjuryRecovery(GameSession session) {
         if (session.getLeague() == null) {
             return;
         }
-        for (ITeam team : session.getLeague().getTeams()) {
-            for (IPlayer p : team.getSquad()) {
-                if (p.isInjured()) {
+        int currentWeek = session.getCurrentWeek();
+        List<IFixture> weekFixtures = session.getLeague().getWeekFixtures(currentWeek);
+
+        Set<ITeam> activeTeams = new HashSet<>();
+        for (IFixture f : weekFixtures){
+            if (f.isPlayed()){
+                activeTeams.add(f.getHomeTeam());
+                activeTeams.add(f.getAwayTeam());
+            }
+        }
+
+        for(ITeam team : activeTeams){
+            for (IPlayer p : team.getSquad()){
+                if (p.isInjured()){
                     p.recoverOneGame();
                 }
             }

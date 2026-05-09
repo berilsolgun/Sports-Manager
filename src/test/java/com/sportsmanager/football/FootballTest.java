@@ -284,20 +284,21 @@ class FootballTest {
     }
 
     @Test
-    void testLeagueStandingsSortedByGoalDifference() {
+    void testLeagueStandingsSortedByHeadToHead() {
         List<ITeam> teams = createTeams(3);
         FootballLeague league = new FootballLeague("Test", teams);
 
         List<IFixture> fixtures = league.getFixtures();
+        ITeam teamA = fixtures.get(0).getHomeTeam();
+        ITeam teamB = fixtures.get(0).getAwayTeam();
+
         league.recordResult(fixtures.get(0),
-                new FootballMatchResult(5, 0, fixtures.get(0).getHomeTeam(), fixtures.get(0).getAwayTeam(), List.of(), List.of()));
-        league.recordResult(fixtures.get(1),
-                new FootballMatchResult(1, 0, fixtures.get(1).getHomeTeam(), fixtures.get(1).getAwayTeam(), List.of(), List.of()));
+                new FootballMatchResult(1, 0, teamA, teamB, List.of(), List.of()));
 
         List<StandingEntry> standings = league.getStandings();
-        int gd0 = standings.get(0).getGoalsFor() - standings.get(0).getGoalsAgainst();
-        int gd1 = standings.get(1).getGoalsFor() - standings.get(1).getGoalsAgainst();
-        assertTrue(gd0 >= gd1);
+        
+        assertEquals(teamA.getName(), standings.get(0).getTeam().getName(),
+                "Team A should be top because it won the Head-to-Head match.");
     }
 
     /** Starters must belong to the team's match-day squad (factory teams restrict eligibility). */

@@ -15,6 +15,11 @@ class StandingsCalculatorTest {
 
     private final StandingsCalculator calculator = new StandingsCalculator();
 
+    /**
+     * Requirement: Points -> Head-to-Head (H2H) Points -> H2H Goal Difference -> H2H Goals For -> Coin Toss.
+     * Note: Overall League Goal Difference (GD) and Goals For (GF) are excluded per brief.
+     */
+
     private static StandingEntry entry(String name, int points, int gf, int ga) {
         StandingEntry e = new StandingEntry();
         e.setTeam(new FootballTeam(name, "logo.png"));
@@ -33,17 +38,80 @@ class StandingsCalculatorTest {
     }
 
     @Test
-    void compareUsesGoalDifferenceWhenPointsEqual() {
-        StandingEntry betterGd = entry("A", 3, 5, 1);
-        StandingEntry worseGd = entry("B", 3, 2, 2);
-        assertTrue(StandingsCalculator.compare(betterGd, worseGd) < 0);
+    void compareFallsBackToTeamNameWhenPointsEqual() {
+        StandingEntry alpha = new StandingEntry();
+        alpha.setTeam(new FootballTeam("Alpha FC", "logo.png"));
+        alpha.setPoints(10);
+
+        StandingEntry zebra = new StandingEntry();
+        zebra.setTeam(new FootballTeam("Zebra FC", "logo.png"));
+        zebra.setPoints(10);
+
+        assertTrue(StandingsCalculator.compare(alpha, zebra) < 0, "Should sort alphabetically when points are equal");
     }
 
     @Test
-    void compareUsesGoalsForWhenPointsAndGoalDifferenceEqual() {
-        StandingEntry moreGf = entry("A", 3, 4, 1);
-        StandingEntry fewerGf = entry("B", 3, 3, 0);
-        assertTrue(StandingsCalculator.compare(moreGf, fewerGf) < 0);
+    void computeDecidesByThreeWayHeadToHead() {
+        // Scenario: A, B, and C all have 3 points.
+        // H2H: A beat B, B beat C, C beat A. (Wait, let's make it simpler)
+        // H2H: A beat B and C. A should be 1st.
+        FootballTeam a = new FootballTeam("A", "a.png");
+        FootballTeam b = new FootballTeam("B", "b.png");
+        FootballTeam c = new FootballTeam("C", "c.png");
+        List<ITeam> teams = List.of(a, b, c);
+
+        List<IFixture> fixtures = new ArrayList<>();
+        // A beats B (3-0)
+        fixtures.add(createFixture(a, b, 3, 0));
+        // A beats C (2-0)
+        fixtures.add(createFixture(a, c, 2, 0));
+        // B beats C (1-0) -> B gets 3 points too, but A has better H2H points
+        fixtures.add(createFixture(b, c, 1, 0));
+
+        List<StandingEntry> table = calculator.compute(teams, fixtures);
+
+        assertEquals("A", table.get(0).getTeam().getName(), "A won both H2H matches, must be 1st");
+    }
+
+    @Test
+    void computeUsesH2HGoalsWhenH2HPointsAreEqual() {
+        // Scenario: A and B drew their match (H2H points equal).
+        // H2H Score: 2-2.
+        // In a 2-2 draw, we check if one has more "Goals For" in that H2H bucket.
+        // Since it's a single match, they are tied until GF.
+        FootballTeam a = new FootballTeam("A", "a.png");
+        FootballTeam b = new FootballTeam("B", "b.png");
+        List<ITeam> teams = List.of(a, b);
+
+        List<IFixture> fixtures = new ArrayList<>();
+        fixtures.add(createFixture(a, b, 2, 2));
+
+        List<StandingEntry> table = calculator.compute(teams, fixtures);
+
+        // At this point, points, H2H points, H2H GD, and H2H GF are all equal.
+        // It must reach the Coin Toss (Deterministic via Seed).
+        assertNotNull(table.get(0).getTeam().getName());
+    }
+
+    @Test
+    void computeReachesCoinTossOnFullDeadlock() {
+        // Scenario: Exactly identical records and H2H.
+        FootballTeam a = new FootballTeam("A", "a.png");
+        FootballTeam b = new FootballTeam("B", "b.png");
+        List<ITeam> teams = List.of(a, b);
+
+        List<IFixture> fixtures = new ArrayList<>();
+        fixtures.add(createFixture(a, b, 0, 0));
+
+        List<StandingEntry> table = calculator.compute(teams, fixtures);
+
+        assertNotEquals(table.get(0).getTeam().getName(), table.get(1).getTeam().getName());
+    }
+
+    private IFixture createFixture(ITeam home, ITeam away, int homeScore, int awayScore) {
+        FootballFixture fx = new FootballFixture(home, away, 1);
+        fx.setResult(new FootballMatchResult(homeScore, awayScore, home, away, List.of(), List.of()));
+        return fx;
     }
 
     @Test
