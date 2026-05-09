@@ -74,29 +74,10 @@ root.setStyle("-fx-background-color: " + bgColor + ";");
         return btn;
     }
 
-    private void startNewGame() {
-        SportFactory factory = sport.createFactory();
-
-        // Create teams
-        String[] teamNames = getTeamNames(factory);
-        List<ITeam> teams = new ArrayList<>();
-        int teamCount = Math.min(4, teamNames.length);
-        for (int i = 0; i < teamCount; i++) {
-            teams.add(factory.createTeam(teamNames[i], "logo.png"));
-        }
-
-        // Create session
-        GameSession session = new GameSession();
-        session.setSport(sport);
-        session.setLeague(factory.createLeague(sport.getName() + " League", teams));
-        session.setPlayerTeam(teams.get(0));
-        session.setCurrentWeek(1);
-        session.setSeason(2026);
-
-        IMatchEngine engine = factory.createMatchEngine();
-        DashboardScreen dashboard = new DashboardScreen(stage, session, engine);
-        stage.setScene(dashboard.createScene());
-    }
+   private void startNewGame() {
+    TeamSelectionScreen teamScreen = new TeamSelectionScreen(stage, sport);
+    stage.setScene(teamScreen.createScene());
+}
 
     private void loadGame() {
         FileChooser chooser = new FileChooser();
