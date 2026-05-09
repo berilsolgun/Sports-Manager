@@ -296,7 +296,7 @@ class FootballTest {
                 new FootballMatchResult(1, 0, teamA, teamB, List.of(), List.of()));
 
         List<StandingEntry> standings = league.getStandings();
-        
+
         assertEquals(teamA.getName(), standings.get(0).getTeam().getName(),
                 "Team A should be top because it won the Head-to-Head match.");
     }

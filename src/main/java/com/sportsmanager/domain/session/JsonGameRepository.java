@@ -134,7 +134,17 @@ public class JsonGameRepository implements GameRepository {
 
                 JsonArray injArr = new JsonArray();
                 for (IPlayer ip : result.getInjuredPlayers()) {
-                    injArr.add(ip.getName());
+                    JsonObject ref = new JsonObject();
+                    ITeam owner = ownerOf(ip, fixture.getHomeTeam(), fixture.getAwayTeam());
+                    if (owner != null) {
+                        ref.addProperty("team", owner.getName());
+                        int idx = owner.getSquad().indexOf(ip);
+                        if (idx >= 0) {
+                            ref.addProperty("squadIndex", idx);
+                        }
+                        ref.addProperty("name", ip.getName());
+                        injArr.add(ref);
+                    }
                 }
                 rObj.add("injuredPlayers", injArr);
 
@@ -171,15 +181,27 @@ public class JsonGameRepository implements GameRepository {
             tObj.add("tactic", tacObj);
         }
 
+        List<IPlayer> squadList = team.getSquad();
+        Map<IPlayer, Integer> indexBySquadMember = new HashMap<>();
+        for (int i = 0; i < squadList.size(); i++) {
+            indexBySquadMember.put(squadList.get(i), i);
+        }
+
         JsonArray mds = new JsonArray();
         for (IPlayer p : team.getMatchDaySquad()) {
-            mds.add(p.getName());
+            Integer idx = indexBySquadMember.get(p);
+            if (idx != null) {
+                mds.add(idx);
+            }
         }
         tObj.add("matchDaySquad", mds);
 
         JsonArray starters = new JsonArray();
         for (IPlayer p : team.getStartingEleven()) {
-            starters.add(p.getName());
+            Integer idx = indexBySquadMember.get(p);
+            if (idx != null) {
+                starters.add(idx);
+            }
         }
         tObj.add("startingEleven", starters);
 
@@ -309,7 +331,7 @@ public class JsonGameRepository implements GameRepository {
                         if (teamObj.has("matchDaySquad") && teamObj.get("matchDaySquad").isJsonArray()) {
                             JsonArray mds = teamObj.getAsJsonArray("matchDaySquad");
                             if (mds.size() > 0) {
-                                List<IPlayer> mdPlayers = resolvePlayersByName(team, mds);
+                                List<IPlayer> mdPlayers = resolvePlayersByRef(team, mds);
                                 team.setMatchDaySquad(mdPlayers, maxMatch);
                             } else {
                                 team.initializeMatchDaySquad(maxMatch);
@@ -321,7 +343,7 @@ public class JsonGameRepository implements GameRepository {
                         if (teamObj.has("startingEleven") && teamObj.get("startingEleven").isJsonArray()) {
                             JsonArray se = teamObj.getAsJsonArray("startingEleven");
                             if (se.size() > 0) {
-                                team.setStartingEleven(resolvePlayersByName(team, se));
+                                team.setStartingEleven(resolvePlayersByRef(team, se));
                             }
                         }
 
@@ -364,7 +386,7 @@ public class JsonGameRepository implements GameRepository {
                                 ? deserializeEvents(rObj.getAsJsonArray("events"), teamByName)
                                 : Collections.emptyList();
                         List<IPlayer> injured = rObj.has("injuredPlayers")
-                                ? resolveInjured(rObj.getAsJsonArray("injuredPlayers"), homeT, awayT)
+                                ? resolveInjured(rObj.getAsJsonArray("injuredPlayers"), teamByName, homeT, awayT)
                                 : Collections.emptyList();
 
                         IMatchResult result = buildRestoredResult(sportName, homeScore, awayScore,
@@ -434,16 +456,29 @@ public class JsonGameRepository implements GameRepository {
         return player;
     }
 
-    private static List<IPlayer> resolvePlayersByName(ITeam team, JsonArray names) {
+    private static List<IPlayer> resolvePlayersByRef(ITeam team, JsonArray refs) {
         List<IPlayer> out = new ArrayList<>();
-        List<IPlayer> pool = new ArrayList<>(team.getSquad());
-        for (int i = 0; i < names.size(); i++) {
-            String nm = names.get(i).getAsString();
-            for (int j = 0; j < pool.size(); j++) {
-                if (pool.get(j).getName().equals(nm)) {
-                    out.add(pool.remove(j));
-                    break;
+        List<IPlayer> squad = team.getSquad();
+        List<IPlayer> pool = new ArrayList<>(squad);
+        for (int i = 0; i < refs.size(); i++) {
+            var element = refs.get(i);
+            IPlayer picked = null;
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+                int idx = element.getAsInt();
+                if (idx >= 0 && idx < squad.size()) {
+                    picked = squad.get(idx);
                 }
+            } else {
+                String nm = element.getAsString();
+                for (int j = 0; j < pool.size(); j++) {
+                    if (pool.get(j).getName().equals(nm)) {
+                        picked = pool.remove(j);
+                        break;
+                    }
+                }
+            }
+            if (picked != null) {
+                out.add(picked);
             }
         }
         return out;
@@ -474,14 +509,47 @@ public class JsonGameRepository implements GameRepository {
         return list;
     }
 
-    private static List<IPlayer> resolveInjured(JsonArray arr, ITeam home, ITeam away) {
+    private static List<IPlayer> resolveInjured(JsonArray arr, Map<String, ITeam> teamByName,
+                                                ITeam home, ITeam away) {
         List<IPlayer> list = new ArrayList<>();
         for (int i = 0; i < arr.size(); i++) {
-            String nm = arr.get(i).getAsString();
-            findPlayer(home, nm).ifPresent(list::add);
-            findPlayer(away, nm).ifPresent(list::add);
+            var element = arr.get(i);
+            if (element.isJsonObject()) {
+                JsonObject obj = element.getAsJsonObject();
+                ITeam owner = obj.has("team") ? teamByName.get(obj.get("team").getAsString()) : null;
+                if (owner == null) {
+                    continue;
+                }
+                if (obj.has("squadIndex")) {
+                    int idx = obj.get("squadIndex").getAsInt();
+                    if (idx >= 0 && idx < owner.getSquad().size()) {
+                        list.add(owner.getSquad().get(idx));
+                        continue;
+                    }
+                }
+                if (obj.has("name")) {
+                    findPlayer(owner, obj.get("name").getAsString()).ifPresent(list::add);
+                }
+            } else {
+                String nm = element.getAsString();
+                Optional<IPlayer> hit = findPlayer(home, nm);
+                if (hit.isEmpty()) {
+                    hit = findPlayer(away, nm);
+                }
+                hit.ifPresent(list::add);
+            }
         }
         return list;
+    }
+
+    private static ITeam ownerOf(IPlayer player, ITeam home, ITeam away) {
+        if (home != null && home.getSquad().contains(player)) {
+            return home;
+        }
+        if (away != null && away.getSquad().contains(player)) {
+            return away;
+        }
+        return null;
     }
 
     private static IMatchResult buildRestoredResult(String sportName, int homeScore, int awayScore,

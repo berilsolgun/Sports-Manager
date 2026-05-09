@@ -100,9 +100,6 @@ public abstract class AbstractTeam implements ITeam {
         List<IPlayer> eligible = getMatchDaySquad();
         if (players != null) {
             for (IPlayer p : players) {
-                if (p.isInjured()) {
-                    throw new IllegalArgumentException("Injured player cannot start: " + p.getName());
-                }
                 if (!eligible.contains(p)) {
                     throw new IllegalArgumentException("Starter must be in match-day squad: " + p.getName());
                 }

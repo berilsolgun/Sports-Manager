@@ -4,10 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.sportsmanager.domain.league.IFixture;
 import com.sportsmanager.domain.league.IMatchResult;
+import com.sportsmanager.domain.simulation.MatchEvent;
+import com.sportsmanager.domain.simulation.MatchEventType;
 import com.sportsmanager.domain.team.Tactic;
 import com.sportsmanager.domain.team.IPlayer;
 import com.sportsmanager.football.FootballFactory;
+import com.sportsmanager.football.FootballMatchResult;
 import com.sportsmanager.football.FootballPlayer;
 import com.sportsmanager.football.FootballPosition;
 import com.sportsmanager.football.FootballSport;
@@ -199,6 +203,60 @@ class JsonGameRepositoryTest {
         assertEquals(result.getHomePoints(), r.getHomePoints());
         assertEquals(result.getAwayPoints(), r.getAwayPoints());
         assertEquals(result.getEvents().size(), r.getEvents().size());
+    }
+
+    @Test
+    void roundTripPreservesMatchEventsAndInjuredPlayers() {
+        FootballSport sport = new FootballSport();
+        FootballFactory factory = new FootballFactory();
+        FootballTeam home = (FootballTeam) factory.createTeam("Home United", "home.png");
+        FootballTeam away = (FootballTeam) factory.createTeam("Away City", "away.png");
+
+        IPlayer scorer = home.getSquad().get(5);
+        IPlayer injuredHome = home.getSquad().get(7);
+        IPlayer injuredAway = away.getSquad().get(3);
+        injuredHome.injure(2);
+        injuredAway.injure(1);
+
+        List<MatchEvent> events = new ArrayList<>();
+        events.add(new MatchEvent(12, 1, MatchEventType.GOAL, scorer.getName() + " scores!", home, scorer));
+        events.add(new MatchEvent(34, 1, MatchEventType.YELLOW_CARD, "yellow", away, away.getSquad().get(0)));
+        events.add(new MatchEvent(78, 2, MatchEventType.SUBSTITUTION, "sub", home, home.getSquad().get(2)));
+
+        FootballMatchResult result = new FootballMatchResult(2, 1, home, away, events, List.of(injuredHome, injuredAway));
+
+        GameSession session = new GameSession();
+        session.setSport(sport);
+        session.setSeason(1);
+        session.setCurrentWeek(1);
+        session.setPlayerTeam(home);
+        session.setLeague(factory.createLeague("Test League", List.of(home, away)));
+
+        IFixture fx = session.getLeague().getWeekFixtures(1).get(0);
+        session.getLeague().recordResult(fx, result);
+
+        repo.save(session);
+        Optional<GameSession> loaded = repo.load();
+        assertTrue(loaded.isPresent());
+
+        IFixture playedFx = loaded.get().getLeague().getFixtures().stream()
+                .filter(IFixture::isPlayed).findFirst().orElseThrow();
+        IMatchResult restored = playedFx.getResult().orElseThrow();
+
+        assertEquals(events.size(), restored.getEvents().size());
+        for (int i = 0; i < events.size(); i++) {
+            MatchEvent original = events.get(i);
+            MatchEvent reloaded = restored.getEvents().get(i);
+            assertEquals(original.getMinute(), reloaded.getMinute());
+            assertEquals(original.getPhase(), reloaded.getPhase());
+            assertEquals(original.getType(), reloaded.getType());
+            assertEquals(original.getDescription(), reloaded.getDescription());
+        }
+
+        assertEquals(2, restored.getInjuredPlayers().size());
+        var injuredNames = restored.getInjuredPlayers().stream().map(IPlayer::getName).toList();
+        assertTrue(injuredNames.contains(injuredHome.getName()));
+        assertTrue(injuredNames.contains(injuredAway.getName()));
     }
 
     private static List<IPlayer> validFootballStarters(FootballTeam team) {
