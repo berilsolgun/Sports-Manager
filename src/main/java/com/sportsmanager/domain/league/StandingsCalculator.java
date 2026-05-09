@@ -2,14 +2,7 @@ package com.sportsmanager.domain.league;
 
 import com.sportsmanager.domain.team.ITeam;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -76,23 +69,14 @@ public final class StandingsCalculator {
     }
 
     /**
-     * Comparator for two entries when league points already known equal (secondary keys without H2H context).
+     * Static comparator for UI or basic sorting where fixture history is unavailable.
+     * Updated: Removed overall GD/GF to match the brief.
      */
     public static int compare(StandingEntry a, StandingEntry b) {
         int c = Integer.compare(b.getPoints(), a.getPoints());
-        if (c != 0) {
-            return c;
-        }
-        int gdA = a.getGoalsFor() - a.getGoalsAgainst();
-        int gdB = b.getGoalsFor() - b.getGoalsAgainst();
-        c = Integer.compare(gdB, gdA);
-        if (c != 0) {
-            return c;
-        }
-        c = Integer.compare(b.getGoalsFor(), a.getGoalsFor());
-        if (c != 0) {
-            return c;
-        }
+        if (c != 0) return c;
+
+        // Overall GD/GF removed as per brief. Falling back to alphabetical for deterministic UI.
         return a.getTeam().getName().compareTo(b.getTeam().getName());
     }
 
@@ -101,33 +85,28 @@ public final class StandingsCalculator {
         Set<ITeam> group = bucket.stream().map(StandingEntry::getTeam).collect(Collectors.toCollection(LinkedHashSet::new));
         Mini ma = miniRecord(a.getTeam(), group, fixtures);
         Mini mb = miniRecord(b.getTeam(), group, fixtures);
+
+        // 1. H2H Points
         int c = Integer.compare(mb.points, ma.points);
         if (c != 0) {
             return c;
         }
+        // 2. H2H Score Difference (if matches were all draws, this will be 0)
         c = Integer.compare(mb.gd(), ma.gd());
         if (c != 0) {
             return c;
         }
+        // 3. H2H Scores For
         c = Integer.compare(mb.gf, ma.gf);
         if (c != 0) {
             return c;
         }
-        c = Integer.compare(b.getGoalsFor() - b.getGoalsAgainst(), a.getGoalsFor() - a.getGoalsAgainst());
-        if (c != 0) {
-            return c;
-        }
-        c = Integer.compare(b.getGoalsFor(), a.getGoalsFor());
-        if (c != 0) {
-            return c;
-        }
-        int ha = seededHash(tieBreakSeed, a.getTeam().getName());
-        int hb = seededHash(tieBreakSeed, b.getTeam().getName());
-        return Integer.compare(ha, hb);
-    }
-
-    private static int seededHash(long seed, String name) {
-        return Objects.hash(seed, name);
+        /**
+         * Brief check: Overall GD and GF are removed as they were not requested in the tie-break tier.
+         */
+        // 4. Final Tie-break: Coin Toss (Deterministic via seed+names for stability)
+        Random tosser = new Random(tieBreakSeed ^ (long)a.getTeam().getName().hashCode() ^ (long)b.getTeam().getName().hashCode());
+        return tosser.nextBoolean() ? 1 : -1;
     }
 
     public List<StandingEntry> compute(List<ITeam> teams, List<IFixture> fixtures) {
@@ -139,14 +118,8 @@ public final class StandingsCalculator {
         }
 
         for (IFixture fixture : fixtures) {
-            if (!fixture.isPlayed()) {
-                continue;
-            }
-            IMatchResult result = fixture.getResult().orElse(null);
-            if (result == null) {
-                continue;
-            }
-            applyResult(entryMap, fixture.getHomeTeam(), fixture.getAwayTeam(), result);
+            if (!fixture.isPlayed()) continue;
+            fixture.getResult().ifPresent(result -> applyResult(entryMap, fixture.getHomeTeam(), fixture.getAwayTeam(), result));
         }
 
         List<StandingEntry> standings = new ArrayList<>(entryMap.values());
@@ -171,8 +144,7 @@ public final class StandingsCalculator {
         return ordered;
     }
 
-    private void applyResult(Map<ITeam, StandingEntry> entryMap, ITeam home, ITeam away,
-                             IMatchResult result) {
+    private void applyResult(Map<ITeam, StandingEntry> entryMap, ITeam home, ITeam away, IMatchResult result) {
         StandingEntry homeEntry = entryMap.get(home);
         StandingEntry awayEntry = entryMap.get(away);
         if (homeEntry == null || awayEntry == null) {
@@ -193,16 +165,16 @@ public final class StandingsCalculator {
         if (result.isDraw()) {
             homeEntry.setDrawn(homeEntry.getDrawn() + 1);
             awayEntry.setDrawn(awayEntry.getDrawn() + 1);
-            homeEntry.setWon(homeEntry.getWon()); // unchanged
-        } else if (result.getWinner().isPresent()) {
-            ITeam w = result.getWinner().get();
-            if (w.equals(home)) {
-                homeEntry.setWon(homeEntry.getWon() + 1);
-                awayEntry.setLost(awayEntry.getLost() + 1);
-            } else {
-                awayEntry.setWon(awayEntry.getWon() + 1);
-                homeEntry.setLost(homeEntry.getLost() + 1);
-            }
+        } else {
+            result.getWinner().ifPresent(w -> {
+                if (w.equals(home)) {
+                    homeEntry.setWon(homeEntry.getWon() + 1);
+                    awayEntry.setLost(awayEntry.getLost() + 1);
+                } else {
+                    awayEntry.setWon(awayEntry.getWon() + 1);
+                    homeEntry.setLost(homeEntry.getLost() + 1);
+                }
+            });
         }
     }
 }

@@ -172,7 +172,7 @@ public class DashboardScreen {
     }
 
     private void finishWeekAfterMatches(int weekPlayed) {
-        matchController.applyGameweekInjuryRecovery(session);
+        matchController.applyGameWeekInjuryRecovery(session);
         weekController.advanceWeek(session);
         logArea.appendText("--- Week " + weekPlayed + " finished. Injury recovery applied. Training complete. ---\n");
         session.getLeague().getWeekFixtures(weekPlayed).forEach(f ->

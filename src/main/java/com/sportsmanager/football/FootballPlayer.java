@@ -91,4 +91,8 @@ public class FootballPlayer extends AbstractPlayer {
     public void setDefending(int defending) { this.defending = defending; }
     public void setPhysical(int physical) { this.physical = physical; }
     public void setGoalkeeping(int goalkeeping) { this.goalkeeping = goalkeeping; }
+    @Override
+    public String toString() {
+        return getName() + " (" + getPosition() + ")";
+    }
 }

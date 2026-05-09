@@ -95,7 +95,7 @@ public class Main {
                         entry.getPoints(),
                         entry.getGoalsFor() - entry.getGoalsAgainst());
             }
-            matchController.applyGameweekInjuryRecovery(session);
+            matchController.applyGameWeekInjuryRecovery(session);
             weekController.advanceWeek(session);
         }
 

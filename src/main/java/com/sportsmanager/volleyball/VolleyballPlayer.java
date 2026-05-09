@@ -113,4 +113,9 @@ public class VolleyballPlayer extends AbstractPlayer {
     public void setPhysical(int physical) {
         this.physical = physical;
     }
+
+    @Override
+    public String toString() {
+        return getName() + " (" + getPosition() + ")";
+    }
 }

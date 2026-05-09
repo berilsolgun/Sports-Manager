@@ -14,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -61,16 +62,32 @@ public class LineupScreen {
 
         ListView<IPlayer> squadView = new ListView<>(FXCollections.observableArrayList(eligible));
         squadView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        squadView.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(IPlayer p, boolean empty) {
-                super.updateItem(p, empty);
-                if (empty || p == null) {
-                    setText(null);
-                } else {
-                    setText(p.getName() + " — " + p.getPosition() + " (" + p.getOverallRating() + ")");
+        squadView.setCellFactory(lv -> {
+            ListCell<IPlayer> cell = new ListCell<>() {
+                @Override
+                protected void updateItem(IPlayer p, boolean empty) {
+                    super.updateItem(p, empty);
+                    if (empty || p == null) {
+                        setText(null);
+                    } else {
+                        setText(p.getName() + " — " + p.getPosition() + " (" + p.getOverallRating() + ")");
+                    }
                 }
-            }
+            };
+            cell.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                if (!cell.isEmpty()) {
+                    int index = cell.getIndex();
+                    if (squadView.getSelectionModel().isSelected(index)) {
+                        squadView.getSelectionModel().clearSelection(index);
+                    } else {
+                        if (squadView.getSelectionModel().getSelectedItems().size() < need) {
+                            squadView.getSelectionModel().select(index);
+                        }
+                    }
+                    event.consume();
+                }
+            });
+            return cell;
         });
         squadView.setPrefHeight(340);
 

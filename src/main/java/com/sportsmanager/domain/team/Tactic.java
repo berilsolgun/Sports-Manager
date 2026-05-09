@@ -37,4 +37,9 @@ public class Tactic {
     public void setDefenseBonus(double defenseBonus) {
         this.defenseBonus = defenseBonus;
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }
