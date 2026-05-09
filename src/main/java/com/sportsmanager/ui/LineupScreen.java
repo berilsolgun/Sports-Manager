@@ -3,18 +3,14 @@ package com.sportsmanager.ui;
 import com.sportsmanager.domain.session.GameSession;
 import com.sportsmanager.domain.team.IPlayer;
 import com.sportsmanager.domain.team.ITeam;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -23,9 +19,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Pick starting lineup from the match-day squad (injured players excluded).
- */
 public class LineupScreen {
 
     private final Stage stage;
@@ -60,46 +53,40 @@ public class LineupScreen {
                 .filter(p -> !p.isInjured())
                 .toList();
 
-        ListView<IPlayer> squadView = new ListView<>(FXCollections.observableArrayList(eligible));
-        squadView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        squadView.setCellFactory(lv -> {
-            ListCell<IPlayer> cell = new ListCell<>() {
-                @Override
-                protected void updateItem(IPlayer p, boolean empty) {
-                    super.updateItem(p, empty);
-                    if (empty || p == null) {
-                        setText(null);
-                    } else {
-                        setText(p.getName() + " — " + p.getPosition() + " (" + p.getOverallRating() + ")");
-                    }
-                }
-            };
-            cell.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-                if (!cell.isEmpty()) {
-                    int index = cell.getIndex();
-                    if (squadView.getSelectionModel().isSelected(index)) {
-                        squadView.getSelectionModel().clearSelection(index);
-                    } else {
-                        if (squadView.getSelectionModel().getSelectedItems().size() < need) {
-                            squadView.getSelectionModel().select(index);
-                        }
-                    }
-                    event.consume();
-                }
-            });
-            return cell;
-        });
-        squadView.setPrefHeight(340);
+        VBox playerList = new VBox(8);
+        playerList.setPadding(new Insets(8));
+        List<CheckBox> boxes = new ArrayList<>();
 
         Label status = new Label("Selected: 0 / " + need);
         status.setStyle("-fx-text-fill: #a8a8a8;");
-        squadView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<IPlayer>) c ->
-                status.setText("Selected: " + squadView.getSelectionModel().getSelectedItems().size() + " / " + need));
+
+        for (IPlayer player : eligible) {
+            CheckBox box = new CheckBox(player.getName() + " - " + player.getPosition()
+                    + " (" + player.getOverallRating() + ")");
+            box.setUserData(player);
+            box.setStyle("-fx-text-fill: #eaeaea; -fx-font-size: 13px;");
+            box.selectedProperty().addListener((obs, oldValue, selected) -> {
+                int selectedCount = selectedCount(boxes);
+                if (selected && selectedCount > need) {
+                    box.setSelected(false);
+                    alert("You can select only " + need + " starters.");
+                    return;
+                }
+                status.setText("Selected: " + selectedCount(boxes) + " / " + need);
+            });
+            boxes.add(box);
+            playerList.getChildren().add(box);
+        }
+
+        ScrollPane scroll = new ScrollPane(playerList);
+        scroll.setFitToWidth(true);
+        scroll.setPrefHeight(340);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
         Button confirm = new Button("Confirm");
         confirm.setStyle("-fx-background-color: #0f3460; -fx-text-fill: white; -fx-padding: 10 28;");
         confirm.setOnAction(e -> {
-            List<IPlayer> picked = new ArrayList<>(squadView.getSelectionModel().getSelectedItems());
+            List<IPlayer> picked = selectedPlayers(boxes);
             if (picked.size() != need) {
                 alert("Please select exactly " + need + " players.");
                 return;
@@ -117,8 +104,22 @@ public class LineupScreen {
             }
         });
 
-        root.getChildren().addAll(title, help, squadView, status, confirm);
+        root.getChildren().addAll(title, help, scroll, status, confirm);
         return new Scene(root, 640, 560);
+    }
+
+    private int selectedCount(List<CheckBox> boxes) {
+        return (int) boxes.stream().filter(CheckBox::isSelected).count();
+    }
+
+    private List<IPlayer> selectedPlayers(List<CheckBox> boxes) {
+        List<IPlayer> selected = new ArrayList<>();
+        for (CheckBox box : boxes) {
+            if (box.isSelected()) {
+                selected.add((IPlayer) box.getUserData());
+            }
+        }
+        return selected;
     }
 
     private void alert(String msg) {

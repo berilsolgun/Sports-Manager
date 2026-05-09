@@ -1,0 +1,59 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sports Manager - User Manual</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; max-width: 900px; margin: 40px auto; line-height: 1.55; color: #1f2933; }
+    h1 { color: #0f3460; }
+    h2 { margin-top: 28px; color: #16213e; }
+    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
+    pre { background: #101827; color: #f8fafc; padding: 14px; border-radius: 8px; overflow-x: auto; }
+    ul, ol { padding-left: 24px; }
+  </style>
+</head>
+<body>
+  <h1>Sports Manager - User Manual</h1>
+
+  <h2>Requirements</h2>
+  <ul>
+    <li>Windows 10 or Windows 11</li>
+    <li>Java Runtime 21 or newer</li>
+  </ul>
+
+  <h2>Installation</h2>
+  <ol>
+    <li>Run <code>SportsManagerSetup.exe</code>.</li>
+    <li>Choose an installation folder or keep the default location.</li>
+    <li>Select the desktop shortcut option if needed.</li>
+    <li>Launch Sports Manager from the Start Menu or desktop shortcut.</li>
+  </ol>
+
+  <h2>Starting a Game</h2>
+  <ol>
+    <li>Select <code>Football</code> or <code>Volleyball</code>.</li>
+    <li>Select <code>New Game</code>.</li>
+    <li>Choose the team you want to manage.</li>
+    <li>Select a tactic.</li>
+    <li>Choose the match-day squad and starting lineup.</li>
+    <li>Use the dashboard to view standings, schedule, squad, and match results.</li>
+  </ol>
+
+  <h2>Playing Matches</h2>
+  <p>Use <code>Simulate Week</code> to advance the current gameweek. Before the player's match, the application asks for tactical and lineup choices. During the live match, phases can be played step by step. Between phases, the manager can change tactic and make substitutions.</p>
+
+  <h2>Save and Load</h2>
+  <p>Use <code>Save Game</code> on the dashboard to create a JSON save file. The save stores the selected sport, season, current week, teams, players, tactics, lineups, fixtures, match results, match events, and injuries.</p>
+  <p>To continue later, choose the same sport from the opening screen and select <code>Load Game</code>. Pick the saved JSON file to restore the season.</p>
+
+  <h2>Season End</h2>
+  <p>When all fixtures are played, the season-end screen displays the champion and final standings. The manager can continue to the next season or return to the main menu.</p>
+
+  <h2>Notes</h2>
+  <ul>
+    <li>The installer does not install Java. The project requirements assume that the target computer already has a recent Java Runtime installed.</li>
+    <li>If the application does not start, check Java with:</li>
+  </ul>
+  <pre>java -version</pre>
+</body>
+</html>

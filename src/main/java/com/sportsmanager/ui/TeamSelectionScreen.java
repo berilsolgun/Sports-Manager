@@ -37,12 +37,14 @@ public class TeamSelectionScreen {
         SportFactory factory = sport.createFactory();
         String[] teamNames = factory.getTeamNames();
         List<ITeam> created = new ArrayList<>();
-        int teamCount = Math.min(4, teamNames.length);
-        for (int i = 0; i < teamCount; i++) {
-            created.add(factory.createTeam(teamNames[i],
-                    teamNames[i].toLowerCase().replace(" ", "_") + ".png"));
+        for (String teamName : teamNames) {
+            created.add(factory.createTeam(teamName, logoFileName(teamName)));
         }
         return created;
+    }
+
+    private String logoFileName(String teamName) {
+        return teamName.toLowerCase().replaceAll("[^a-z0-9]+", "__") + ".png";
     }
 
     public Scene createScene() {
@@ -127,3 +129,5 @@ public class TeamSelectionScreen {
                 }).createScene())).createScene());
     }
 }
+
+

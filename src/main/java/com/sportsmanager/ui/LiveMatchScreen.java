@@ -16,10 +16,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,6 +74,7 @@ public class LiveMatchScreen {
 
         List<Tactic> tactics = session.getSport().createFactory().generateTactics();
         ComboBox<Tactic> tacticBox = new ComboBox<>(FXCollections.observableArrayList(tactics));
+        configureTacticCombo(tacticBox);
         tacticBox.setPromptText("Change tactic (your team)");
         tacticBox.setOnAction(e -> {
             Tactic t = tacticBox.getSelectionModel().getSelectedItem();
@@ -83,6 +86,8 @@ public class LiveMatchScreen {
 
         ComboBox<IPlayer> outSub = new ComboBox<>();
         ComboBox<IPlayer> inSub = new ComboBox<>();
+        configurePlayerCombo(outSub);
+        configurePlayerCombo(inSub);
         refreshSubCombos(player, outSub, inSub);
 
         Button subBtn = new Button("Substitute");
@@ -124,6 +129,55 @@ public class LiveMatchScreen {
         return new Scene(root, 720, 620);
     }
 
+
+    private void configureTacticCombo(ComboBox<Tactic> combo) {
+        combo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Tactic tactic) {
+                return tactic == null ? "" : tactic.getName();
+            }
+
+            @Override
+            public Tactic fromString(String string) {
+                return null;
+            }
+        });
+        combo.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Tactic tactic, boolean empty) {
+                super.updateItem(tactic, empty);
+                setText(empty || tactic == null ? null : tactic.getName());
+            }
+        });
+    }
+
+    private void configurePlayerCombo(ComboBox<IPlayer> combo) {
+        combo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(IPlayer player) {
+                return playerLabel(player);
+            }
+
+            @Override
+            public IPlayer fromString(String string) {
+                return null;
+            }
+        });
+        combo.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(IPlayer player, boolean empty) {
+                super.updateItem(player, empty);
+                setText(empty || player == null ? null : playerLabel(player));
+            }
+        });
+    }
+
+    private String playerLabel(IPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        return player.getName() + " - " + player.getPosition() + " (" + player.getOverallRating() + ")";
+    }
     private String formatScoreLabel(ITeam home, ITeam away, int h, int a) {
         boolean vb = session.getSport().getName().equalsIgnoreCase("Volleyball");
         String u = vb ? "sets" : "goals";
@@ -179,7 +233,7 @@ public class LiveMatchScreen {
         }
         try {
             player.substitute(out, in);
-            log.appendText("Substitution: " + out.getName() + " → " + in.getName() + "\n");
+            log.appendText("Substitution: " + out.getName() + " -> " + in.getName() + "\n");
             refreshSubCombos(player, outSub, inSub);
         } catch (IllegalArgumentException | IllegalStateException ex) {
             alert(ex.getMessage());
@@ -193,3 +247,4 @@ public class LiveMatchScreen {
         a.showAndWait();
     }
 }
+

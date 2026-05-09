@@ -71,7 +71,7 @@ public class SeasonEndScreen {
         Label trophyLabel = new Label("Total Championships: " + session.getChampionshipCount());
         trophyLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffd700;");
 
-        Label seasonInfo = new Label("Season " + session.getSeason() + " — Final standings");
+        Label seasonInfo = new Label("Season " + session.getSeason() + " - Final standings");
         seasonInfo.setStyle("-fx-font-size: 14px; -fx-text-fill: #b0b0b0;");
 
         TableView<StandingRow> table = new TableView<>();
@@ -197,3 +197,4 @@ public class SeasonEndScreen {
         }
     }
 }
+
