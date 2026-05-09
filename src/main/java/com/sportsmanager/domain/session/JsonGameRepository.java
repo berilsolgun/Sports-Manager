@@ -50,7 +50,7 @@ public class JsonGameRepository implements GameRepository {
 
         root.addProperty("currentWeek", session.getCurrentWeek());
         root.addProperty("season", session.getSeason());
-
+        root.addProperty("championshipCount", session.getChampionshipCount());
         if (session.getSport() != null) {
             root.addProperty("sportName", session.getSport().getName());
         }
@@ -164,6 +164,9 @@ if (player instanceof com.sportsmanager.football.FootballPlayer fp) {
         if (root.has("season")) {
             session.setSeason(root.get("season").getAsInt());
         }
+        if (root.has("championshipCount")) {
+    session.setChampionshipCount(root.get("championshipCount").getAsInt());
+}
 
         if (!root.has("sportName")) {
             return Optional.of(session);

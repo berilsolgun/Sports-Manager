@@ -17,7 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
+import com.sportsmanager.domain.team.Tactic;
 import java.io.File;
 import java.util.List;
 
@@ -111,9 +111,10 @@ private void onSaveGame() {
 
 
 
-    private void onSimulateWeek() {
+   private void onSimulateWeek() {
     if (leagueController.isSeasonComplete(session)) {
-        logArea.appendText("Season is over!\n");
+        SeasonEndScreen endScreen = new SeasonEndScreen(stage, session, engine);
+        stage.setScene(endScreen.createScene());
         return;
     }
 
@@ -142,6 +143,13 @@ private void runWeekSimulation() {
     weekController.advanceWeek(session);
     weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
     refreshStandings();
+// Check if season just ended
+        if (leagueController.isSeasonComplete(session)) {
+            SeasonEndScreen endScreen = new SeasonEndScreen(stage, session, engine);
+            stage.setScene(endScreen.createScene());
+        }
+
+
 }
     private void showSquadScreen() {
         SquadScreen squadScreen = new SquadScreen(stage, this, session);

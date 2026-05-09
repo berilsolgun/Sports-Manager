@@ -15,7 +15,7 @@ public class GameSession {
     private Sport sport;
     private int currentWeek;
     private int season;
-
+    private int championshipCount = 0;
     public ITeam getPlayerTeam() {
         return playerTeam;
     }
@@ -68,4 +68,16 @@ public class GameSession {
                 + ", week=" + currentWeek
                 + ", season=" + season + "}";
     }
+
+    public int getChampionshipCount() {
+    return championshipCount;
+}
+
+public void setChampionshipCount(int championshipCount) {
+    this.championshipCount = championshipCount;
+}
+
+public void incrementChampionshipCount() {
+    this.championshipCount++;
+}
 }
