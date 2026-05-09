@@ -87,32 +87,16 @@ public class FootballFactory implements SportFactory {
         return new FootballMatchEngine();
     }
 
-    @Override
+    
     public List<Tactic> generateTactics() {
-        List<Tactic> tactics = new ArrayList<>();
-
-        Tactic t1 = new Tactic();
-        t1.setName("4-4-2");
-        tactics.add(t1);
-
-        Tactic t2 = new Tactic();
-        t2.setName("4-3-3");
-        tactics.add(t2);
-
-        Tactic t3 = new Tactic();
-        t3.setName("3-5-2");
-        tactics.add(t3);
-
-        Tactic t4 = new Tactic();
-        t4.setName("4-2-3-1");
-        tactics.add(t4);
-
-        Tactic t5 = new Tactic();
-        t5.setName("5-3-2");
-        tactics.add(t5);
-
-        return tactics;
-    }
+    List<Tactic> tactics = new ArrayList<>();
+    tactics.add(new Tactic("4-4-2", 1.00, 1.00));      // Balanced
+    tactics.add(new Tactic("4-3-3", 1.15, 0.90));      // Attacking
+    tactics.add(new Tactic("3-5-2", 1.10, 0.95));      // Slightly attacking
+    tactics.add(new Tactic("4-2-3-1", 1.05, 1.05));    // Modern balanced
+    tactics.add(new Tactic("5-3-2", 0.90, 1.15));      // Defensive
+    return tactics;
+}
 
     public FootballPlayer generateRandomPlayer(FootballPosition pos) {
         String name = PLAYER_NAMES[random.nextInt(PLAYER_NAMES.length)];

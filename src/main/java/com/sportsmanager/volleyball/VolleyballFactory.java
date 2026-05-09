@@ -80,22 +80,12 @@ public class VolleyballFactory implements SportFactory {
 
     @Override
     public List<Tactic> generateTactics() {
-        List<Tactic> tactics = new ArrayList<>();
-
-        Tactic t1 = new Tactic();
-        t1.setName("5-1 System");
-        tactics.add(t1);
-
-        Tactic t2 = new Tactic();
-        t2.setName("4-2 System");
-        tactics.add(t2);
-
-        Tactic t3 = new Tactic();
-        t3.setName("6-2 System");
-        tactics.add(t3);
-
-        return tactics;
-    }
+    List<Tactic> tactics = new ArrayList<>();
+    tactics.add(new Tactic("5-1 System", 1.10, 1.00));   // One setter, more attackers
+    tactics.add(new Tactic("4-2 System", 0.95, 1.05));   // Two setters, defensive
+    tactics.add(new Tactic("6-2 System", 1.05, 1.05));   // Balanced
+    return tactics;
+}
 
     public VolleyballPlayer generateRandomPlayer(VolleyballPosition pos) {
         String name = PLAYER_NAMES[random.nextInt(PLAYER_NAMES.length)];

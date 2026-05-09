@@ -94,15 +94,19 @@ public IMatchResult simulate(ITeam home, ITeam away) {
     }
 
     private double calculateTeamStrength(ITeam team) {
-        List<IPlayer> squad = team.getStartingEleven();
-        if (squad == null || squad.isEmpty()) squad = team.getSquad();
+    List<IPlayer> squad = team.getStartingEleven();
+    if (squad == null || squad.isEmpty()) squad = team.getSquad();
 
-        return squad.stream()
-                .filter(p -> !p.isInjured())
-                .mapToInt(IPlayer::getOverallRating)
-                .average()
-                .orElse(50.0) / 50.0;
-    }
+    double base = squad.stream()
+            .filter(p -> !p.isInjured())
+            .mapToInt(IPlayer::getOverallRating)
+            .average()
+            .orElse(50.0) / 50.0;
+
+    // Apply tactic attack bonus (volleyball: attack tactic favors offensive points)
+    double tacticBonus = (team.getCurrentTactic() != null) ? team.getCurrentTactic().getAttackBonus() : 1.0;
+    return base * tacticBonus;
+}
 
     private IPlayer pickRandomScorer(ITeam team) {
         List<IPlayer> squad = team.getStartingEleven();

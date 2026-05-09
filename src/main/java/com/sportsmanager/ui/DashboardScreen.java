@@ -112,32 +112,37 @@ private void onSaveGame() {
 
 
     private void onSimulateWeek() {
-        if (leagueController.isSeasonComplete(session)) {
-            logArea.appendText("Season is over!\n");
-            return;
-        }
-
-        int week = session.getCurrentWeek();
-        matchController.playCurrentWeek(session, engine);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("--- Week ").append(week).append(" Results ---\n");
-
-        session.getLeague().getWeekFixtures(week).forEach(f -> {
-            f.getResult().ifPresent(r -> {
-                String scoreLabel = session.getSport().getName().equals("Football") ? "Goals" : "Sets";
-                sb.append(String.format("  %s %d - %d %s\n",
-                        f.getHomeTeam().getName(), r.getHomeScore(),
-                        r.getAwayScore(), f.getAwayTeam().getName()));
-            });
-        });
-
-        logArea.appendText(sb.toString());
-        weekController.advanceWeek(session);
-        weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
-        refreshStandings();
+    if (leagueController.isSeasonComplete(session)) {
+        logArea.appendText("Season is over!\n");
+        return;
     }
 
+    // Show tactic selection before simulating
+    TacticSelectionScreen tacticScreen = new TacticSelectionScreen(stage, session, chosenTactic -> {
+        logArea.appendText("Tactic chosen: " + chosenTactic.getName() + "\n");
+        stage.setScene(getScene());
+        runWeekSimulation();
+    });
+    stage.setScene(tacticScreen.createScene());
+}
+
+private void runWeekSimulation() {
+    int week = session.getCurrentWeek();
+    matchController.playCurrentWeek(session, engine);
+    StringBuilder sb = new StringBuilder();
+    sb.append("--- Week ").append(week).append(" Results ---\n");
+    session.getLeague().getWeekFixtures(week).forEach(f -> {
+        f.getResult().ifPresent(r -> {
+            sb.append(String.format("  %s %d - %d %s\n",
+                    f.getHomeTeam().getName(), r.getHomeScore(),
+                    r.getAwayScore(), f.getAwayTeam().getName()));
+        });
+    });
+    logArea.appendText(sb.toString());
+    weekController.advanceWeek(session);
+    weekLabel.setText("Week " + session.getCurrentWeek() + "  |  Season " + session.getSeason());
+    refreshStandings();
+}
     private void showSquadScreen() {
         SquadScreen squadScreen = new SquadScreen(stage, this, session);
         stage.setScene(squadScreen.createScene());
