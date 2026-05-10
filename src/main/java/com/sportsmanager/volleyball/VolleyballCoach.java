@@ -27,6 +27,11 @@ public class VolleyballCoach implements ICoach {
     }
 
     @Override
+    public String toString() {
+        return name + " (" + speciality + ")";
+    }
+
+    @Override
     public void conductTraining(List<IPlayer> squad) {
         for(IPlayer player : squad){
             if (player.isInjured() || !(player instanceof VolleyballPlayer vp)){

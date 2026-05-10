@@ -1,6 +1,7 @@
 package com.sportsmanager.ui;
 
 import com.sportsmanager.domain.session.GameSession;
+import com.sportsmanager.domain.team.ICoach;
 import com.sportsmanager.domain.team.IPlayer;
 import com.sportsmanager.domain.team.ITeam;
 import javafx.collections.FXCollections;
@@ -23,6 +24,7 @@ public class SquadScreen {
 
     private TableView<PlayerRow> table;
     private Label title;
+    private ListView<ICoach> coachList;
 
     public SquadScreen(Stage stage, DashboardScreen dashboard, GameSession session) {
         this.stage = stage;
@@ -32,6 +34,12 @@ public class SquadScreen {
 
     @SuppressWarnings("unchecked")
     public Scene createScene() {
+        coachList = new ListView<>();
+        coachList.setPrefHeight(100);
+
+        VBox trainingBox = getVBox();
+
+
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
@@ -101,13 +109,30 @@ public class SquadScreen {
                 + "-fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 8 20;");
         backBtn.setOnAction(e -> stage.setScene(dashboard.getScene()));
 
-        root.getChildren().addAll(title, selectorRow, table, backBtn);
+        root.getChildren().addAll(title, selectorRow, trainingBox, table, backBtn);
         return new Scene(root, 750, 650);
+    }
+
+    private VBox getVBox() {
+        Button trainBtn = new Button("Run Weekly Training");
+        trainBtn.setOnAction(e -> {
+            for (ITeam t : session.getLeague().getTeams()) {
+                for (ICoach c : t.getCoaches()) {
+                    c.conductTraining(t.getSquad());
+                }
+            }
+            loadTeam(session.getPlayerTeam());
+        });
+
+        Label coachLabel = new Label("Team Coaches:");
+        coachLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
+        return new VBox(5, coachLabel, coachList, trainBtn);
     }
 
     private void loadTeam(ITeam team) {
         title.setText(team.getName() + " - Squad");
         table.setItems(FXCollections.observableArrayList());
+        coachList.setItems(FXCollections.observableArrayList(team.getCoaches()));
         for (IPlayer p : team.getSquad()) {
             String status = p.isInjured() ? "Injured (" + p.getInjuryGamesRemaining() + " games)" : "Fit";
             table.getItems().add(new PlayerRow(p.getName(), p.getAge(),
