@@ -90,10 +90,6 @@ public abstract class AbstractTeam implements ITeam {
         squad.remove(player);
     }
 
-    public void addCoach(ICoach coach) {
-        this.coaches.add(coach);
-    }
-
     @Override
     public List<IPlayer> getStartingEleven() {
         return startingEleven;

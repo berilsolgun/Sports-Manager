@@ -16,6 +16,7 @@ public class GameSession {
     private int currentWeek;
     private int season;
     private int championshipCount;
+    private boolean trainedThisWeek;
 
     public ITeam getPlayerTeam() {
         return playerTeam;
@@ -70,6 +71,14 @@ public class GameSession {
 
     public void incrementChampionshipCount() {
         this.championshipCount++;
+    }
+
+    public boolean isTrainedThisWeek() {
+        return trainedThisWeek;
+    }
+
+    public void setTrainedThisWeek(boolean trainedThisWeek) {
+        this.trainedThisWeek = trainedThisWeek;
     }
 
     @Override

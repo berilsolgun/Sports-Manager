@@ -25,6 +25,7 @@ public class SquadScreen {
     private TableView<PlayerRow> table;
     private Label title;
     private ListView<ICoach> coachList;
+    private Button trainBtn;
 
     public SquadScreen(Stage stage, DashboardScreen dashboard, GameSession session) {
         this.stage = stage;
@@ -34,17 +35,14 @@ public class SquadScreen {
 
     @SuppressWarnings("unchecked")
     public Scene createScene() {
-        // Root Layout
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
         root.setStyle("-fx-background-color: " + bgColor + ";");
 
-        // Title
         title = new Label(session.getPlayerTeam().getName() + " - Squad");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #e94560;");
 
-        // Team Selector Row
         Label selectorLabel = new Label("View Team:");
         selectorLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #eaeaea;");
         ComboBox<String> teamSelector = new ComboBox<>();
@@ -56,7 +54,6 @@ public class SquadScreen {
         HBox selectorRow = new HBox(10, selectorLabel, teamSelector);
         selectorRow.setAlignment(Pos.CENTER_LEFT);
 
-        // --- COACH SECTION ---
         coachList = new ListView<>();
         coachList.setPrefHeight(100);
         coachList.setStyle("-fx-background-color: #1a1a2e;");
@@ -66,28 +63,11 @@ public class SquadScreen {
 
         VBox coachInfoBox = new VBox(5, coachLabel, coachList);
 
-        Button trainBtn = new Button("Run Weekly Training");
-        trainBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 10 20;");
+        trainBtn = new Button();
+        trainBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; "
+                + "-fx-cursor: hand; -fx-padding: 10 20;");
+        trainBtn.setOnAction(e -> onTrainPlayerTeam());
 
-        trainBtn.setOnAction(e -> {
-            if (session.getPlayerTeam().getCoaches().isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "You need at least one coach to train!");
-                alert.show();
-                return;
-            }
-
-            for (ITeam team : session.getLeague().getTeams()) {
-                for (ICoach coach : team.getCoaches()) {
-                    coach.conductTraining(team.getSquad());
-                }
-            }
-
-            loadTeam(session.getPlayerTeam());
-            Alert success = new Alert(Alert.AlertType.INFORMATION, "Weekly training completed for all teams!");
-            success.show();
-        });
-
-        // --- TABLE SETUP ---
         table = new TableView<>();
         table.setStyle("-fx-background-color: #1a1a2e;");
 
@@ -114,10 +94,8 @@ public class SquadScreen {
         table.getColumns().addAll(nameCol, ageCol, posCol, ratingCol, statusCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
-        // Initial load
         loadTeam(session.getPlayerTeam());
 
-        // Event: Change Team
         teamSelector.setOnAction(e -> {
             String selected = teamSelector.getValue();
             for (ITeam t : allTeams) {
@@ -129,24 +107,58 @@ public class SquadScreen {
         });
 
         Button backBtn = new Button("Back to Dashboard");
-        backBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #0f3460; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand;");
+        backBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #0f3460; -fx-text-fill: white; "
+                + "-fx-padding: 8 20; -fx-cursor: hand;");
         backBtn.setOnAction(e -> stage.setScene(dashboard.getScene()));
 
         root.getChildren().addAll(title, selectorRow, trainBtn, coachInfoBox, table, backBtn);
-
         return new Scene(root, 800, 750);
+    }
+
+    private void onTrainPlayerTeam() {
+        ITeam playerTeam = session.getPlayerTeam();
+        if (playerTeam.getCoaches().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "You need at least one coach to train!");
+            alert.setHeaderText(null);
+            alert.show();
+            return;
+        }
+        if (session.isTrainedThisWeek()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION,
+                    "Your team has already trained this week. The next session unlocks after the next match week.");
+            alert.setHeaderText(null);
+            alert.show();
+            return;
+        }
+        for (ICoach coach : playerTeam.getCoaches()) {
+            coach.conductTraining(playerTeam.getSquad());
+        }
+        session.setTrainedThisWeek(true);
+        loadTeam(playerTeam);
+        Alert success = new Alert(Alert.AlertType.INFORMATION, "Weekly training completed for "
+                + playerTeam.getName() + ".");
+        success.setHeaderText(null);
+        success.show();
     }
 
     private void loadTeam(ITeam team) {
         title.setText(team.getName() + " - Squad");
         table.setItems(FXCollections.observableArrayList());
-
         coachList.setItems(FXCollections.observableArrayList(team.getCoaches()));
-
         for (IPlayer p : team.getSquad()) {
             String status = p.isInjured() ? "Injured (" + p.getInjuryGamesRemaining() + " games)" : "Fit";
             table.getItems().add(new PlayerRow(p.getName(), p.getAge(),
                     p.getPosition().name(), p.getOverallRating(), status));
+        }
+        boolean isPlayerTeam = team == session.getPlayerTeam();
+        boolean alreadyTrained = session.isTrainedThisWeek();
+        trainBtn.setDisable(!isPlayerTeam || alreadyTrained);
+        if (!isPlayerTeam) {
+            trainBtn.setText("Run Weekly Training (your team only)");
+        } else if (alreadyTrained) {
+            trainBtn.setText("Already trained this week");
+        } else {
+            trainBtn.setText("Run Weekly Training");
         }
     }
 
