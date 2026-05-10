@@ -34,36 +34,60 @@ public class SquadScreen {
 
     @SuppressWarnings("unchecked")
     public Scene createScene() {
-        coachList = new ListView<>();
-        coachList.setPrefHeight(100);
-
-        VBox trainingBox = getVBox();
-
-
+        // Root Layout
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         String bgColor = session.getSport().getName().equalsIgnoreCase("Volleyball") ? "#4a1c40" : "#16213e";
         root.setStyle("-fx-background-color: " + bgColor + ";");
 
+        // Title
         title = new Label(session.getPlayerTeam().getName() + " - Squad");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #e94560;");
 
-        // Team selector dropdown
+        // Team Selector Row
         Label selectorLabel = new Label("View Team:");
         selectorLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #eaeaea;");
-
         ComboBox<String> teamSelector = new ComboBox<>();
         List<ITeam> allTeams = session.getLeague().getTeams();
         for (ITeam t : allTeams) {
             teamSelector.getItems().add(t.getName());
         }
         teamSelector.setValue(session.getPlayerTeam().getName());
-        teamSelector.setStyle("-fx-font-size: 14px; -fx-pref-width: 200;");
-
         HBox selectorRow = new HBox(10, selectorLabel, teamSelector);
         selectorRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Table setup
+        // --- COACH SECTION ---
+        coachList = new ListView<>();
+        coachList.setPrefHeight(100);
+        coachList.setStyle("-fx-background-color: #1a1a2e;");
+
+        Label coachLabel = new Label("Team Coaches:");
+        coachLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
+
+        VBox coachInfoBox = new VBox(5, coachLabel, coachList);
+
+        Button trainBtn = new Button("Run Weekly Training");
+        trainBtn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 10 20;");
+
+        trainBtn.setOnAction(e -> {
+            if (session.getPlayerTeam().getCoaches().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "You need at least one coach to train!");
+                alert.show();
+                return;
+            }
+
+            for (ITeam team : session.getLeague().getTeams()) {
+                for (ICoach coach : team.getCoaches()) {
+                    coach.conductTraining(team.getSquad());
+                }
+            }
+
+            loadTeam(session.getPlayerTeam());
+            Alert success = new Alert(Alert.AlertType.INFORMATION, "Weekly training completed for all teams!");
+            success.show();
+        });
+
+        // --- TABLE SETUP ---
         table = new TableView<>();
         table.setStyle("-fx-background-color: #1a1a2e;");
 
@@ -93,7 +117,7 @@ public class SquadScreen {
         // Initial load
         loadTeam(session.getPlayerTeam());
 
-        // Update on team selection
+        // Event: Change Team
         teamSelector.setOnAction(e -> {
             String selected = teamSelector.getValue();
             for (ITeam t : allTeams) {
@@ -105,34 +129,20 @@ public class SquadScreen {
         });
 
         Button backBtn = new Button("Back to Dashboard");
-        backBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #0f3460; -fx-text-fill: white; "
-                + "-fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 8 20;");
+        backBtn.setStyle("-fx-font-size: 14px; -fx-background-color: #0f3460; -fx-text-fill: white; -fx-padding: 8 20; -fx-cursor: hand;");
         backBtn.setOnAction(e -> stage.setScene(dashboard.getScene()));
 
-        root.getChildren().addAll(title, selectorRow, trainingBox, table, backBtn);
-        return new Scene(root, 750, 650);
-    }
+        root.getChildren().addAll(title, selectorRow, trainBtn, coachInfoBox, table, backBtn);
 
-    private VBox getVBox() {
-        Button trainBtn = new Button("Run Weekly Training");
-        trainBtn.setOnAction(e -> {
-            for (ITeam t : session.getLeague().getTeams()) {
-                for (ICoach c : t.getCoaches()) {
-                    c.conductTraining(t.getSquad());
-                }
-            }
-            loadTeam(session.getPlayerTeam());
-        });
-
-        Label coachLabel = new Label("Team Coaches:");
-        coachLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
-        return new VBox(5, coachLabel, coachList, trainBtn);
+        return new Scene(root, 800, 750);
     }
 
     private void loadTeam(ITeam team) {
         title.setText(team.getName() + " - Squad");
         table.setItems(FXCollections.observableArrayList());
+
         coachList.setItems(FXCollections.observableArrayList(team.getCoaches()));
+
         for (IPlayer p : team.getSquad()) {
             String status = p.isInjured() ? "Injured (" + p.getInjuryGamesRemaining() + " games)" : "Fit";
             table.getItems().add(new PlayerRow(p.getName(), p.getAge(),
