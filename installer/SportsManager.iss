@@ -30,11 +30,11 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Source: "..\target\sports-manager-1.0-SNAPSHOT.jar"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\target\lib\*.jar"; DestDir: "{app}\lib"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\scripts\run-gui.bat"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Flags: ignoreversion
-Source: "..\docs\UserManual.html"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\UserManual.pdf"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Sports Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{group}\User Manual"; Filename: "{app}\docs\UserManual.html"
+Name: "{group}\User Manual"; Filename: "{app}\docs\UserManual.pdf"
 Name: "{autodesktop}\Sports Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
